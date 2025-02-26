@@ -5,14 +5,18 @@ class Logger:
     """Creates a piece of log and then writes it to disk/db.
 
     Arguments: 
-        path - 
-    Properties: 
-        log :str - current piece of log 
+        path :str - path to log-file relatively to the current working directory.
 
+    Properties: 
+        log :str - atomic peace of log. 
     
+    Methods: 
+        add_to_log(response :str, endpoint :str, description :str) - adds new line to the log variable. 
+        write_to_disk() - performs writing operation to the local disk. 
+        write_to_db( :ClassInstanceOfDBConnection) - performs writing operation to the database. 
     """
 
-    def __init__(self, path='logs.tsv'):
+    def __init__(self, path='logs.tsv', db_connection = None):
         self._path = path
         self._response = '\t'
         self._endpoint = '\t'
