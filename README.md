@@ -20,7 +20,7 @@ It works seamlessly with both:
 - [**Sessions/Visits Table**](https://yandex.com/dev/Metrica/en/logs/fields/visits)  
 - [**Events/Hits Table**](https://yandex.com/dev/Metrica/en/logs/fields/hits)  
 
-Configuration is flexible via multiple JSON files. [See the config files section](#config-files).  
+Configuration is determined via multiple JSON files. [See the config files section](#config-files).  
 
 ### Automation  
 Extractor execution can be automated using:  
