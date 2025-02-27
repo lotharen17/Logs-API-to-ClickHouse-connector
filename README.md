@@ -67,7 +67,7 @@ Before running the extractor, ensure you have:
 This project relies on several JSON configuration files:  
 
 - **`source_fields.json`**  
-  - `fields` *(string)*: Comma-separated list of fields (either for [sessions](https://yandex.com/dev/metrika/en/logs/fields/visits) or [events](https://yandex.com/dev/metrika/en/logs/fields/hits)).  
+  - `fields` *(string)*: Comma-separated listing of fields (either for [sessions](https://yandex.com/dev/metrika/en/logs/fields/visits) or [events](https://yandex.com/dev/metrika/en/logs/fields/hits)).  
   - `source` *(string)*: Either `"visits"` for sessions or `"hits"` for events.  
 
 - **`token_counter.json`**  
