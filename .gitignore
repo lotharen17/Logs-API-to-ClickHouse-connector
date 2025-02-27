@@ -6,3 +6,4 @@ ssh_credentials.json
 token_counter.txt
 .ipynb_checkpoints
 __pycache__/
+tests.py
