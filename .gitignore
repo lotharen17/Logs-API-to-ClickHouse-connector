@@ -3,7 +3,8 @@ data_extraction.ipynb
 logs.tsv
 metrika_data.tsv
 ssh_credentials.json
-token_counter.txt
+token_counter.json
 .ipynb_checkpoints
 __pycache__/
 tests.py
+logs/*
