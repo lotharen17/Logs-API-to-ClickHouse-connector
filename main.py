@@ -1,6 +1,3 @@
-import pandas as pd 
-import numpy as np 
-import matplotlib.pyplot as plt
 import sshtunnel
 import clickhouse_connect
 import requests
@@ -16,7 +13,7 @@ re_run = 0 #variable for future purposes: will be returned to the system, so the
 default_sleep_time = 120 #seconds to wait before requesting prepared data 
 
 api_file_path = "metrika_data.tsv"
-log_path = 'logs.tsv'
+log_file_path = 'logs/logs.tsv'
 
 
 #Loading file with with clickhouse credentials:

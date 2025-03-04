@@ -7,6 +7,7 @@ class Logger:
 
     Arguments: 
         path :str - path to log-file relatively to the current working directory.
+        run_log_path - path to save end-to-end log. 
 
     Properties: 
         log :str - end-to-end peace of log during current programm run. 
@@ -20,7 +21,7 @@ class Logger:
     TAB_SEP = '\t'
     EOL_SEP = '\n'
 
-    def __init__(self, path='logs/logs.tsv',  db_connection = None, run_log_path = None):
+    def __init__(self, path='logs/logs.tsv', run_log_path = None):
         self._run_log_path = run_log_path 
         self._path = path
         self._log = ''
@@ -34,27 +35,29 @@ class Logger:
     def path(self): 
         return self._path
 
-    def add_to_log(self, response='', endpoint='', desctiption=''):
+    def add_to_log(self, response=200, endpoint='', description=''):
         """Method to add line to end-to-end log. Also assigns log line.
         
         Arguments: 
-            response :str - response http code or special codes to signalize about some errrors.
+            response :int - response http code or special codes to signalize about some errrors.
             endpoint :str - url or special local endpoints. 
             description :str - text description of what happened.
         
         Returns: 
-            self (suitable for methods chaining)
+            self (suitable for methods chaining). 
+            _log_line is a tsv row with datetime of the datetime type, int repsonse code, str endpoint and str description (text). The _log is the 
+            cummulative concatanation of _log_lines. 
         """
         
-        full_response = Logger.TAB_SEP + response
+        full_response = Logger.TAB_SEP + str(response)
         full_endpoint = Logger.TAB_SEP + endpoint 
-        full_description = Logger.TAB_SEP + desctiption + Logger.EOL_SEP
+        full_description = Logger.TAB_SEP + description + Logger.EOL_SEP
         date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         self._log_line = date_time + full_response + full_endpoint + full_description
         self._log += self._log_line
         return self 
     
-    def write_to_disk_incremental(self):
+    def write_to_disk_incremental(self, classMethod = 'None'):
         """Method to make incremental writes to local logfile.
         
         Arguments: 
@@ -68,11 +71,10 @@ class Logger:
             """Function which takes atomic part of log (one line) from global environment (self) and writes them to logfile."""
             with open(self._path, "a", encoding="utf-8", newline='\n') as f:
                 f.write(self._log_line)
-                print('Logline was successfully written to disk.')
+                print(f"Logline of {classMethod} job was successfully written to disk.")
                 self._log_line = ''
 
         if os.path.exists(self._path): 
-            print(f"Path {self._path} exists.")
             try: 
                 nested_writer()
             except(OSError, IOError): 
@@ -97,20 +99,3 @@ class Logger:
     
     def write_to_db(self, db_connection, table_name): 
         pass
-
-
-        
-
-#File logger, to log atomic (one row) results in log-file
-# def logger(response ='\t', endpoint='\t', description = '\t\n', path='logs.tsv'):
-#     """Logs data in file"""
-#     date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-#     log_line = date_time + response + endpoint +description
-#     with open(path, "a", encoding="utf-8", newline='\n') as f:
-#         f.write(log_line)
-#     return None
-
-
-
-#File
-
