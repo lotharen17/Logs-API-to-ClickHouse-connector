@@ -4,9 +4,17 @@ import sshtunnel
 
 
 class ClickHouseConnector:
-    """Class to create SSHTunnel to remote host with ClickHouse installed
+    """Class to create ClickHouse connection and (optionally) ssh tunnel.
     
     Arguments:
+        logger :instance of Logger object - logger to log all the operations inside. 
+        login :str - login to ClickHouse server authorization. 
+        password :str - password to ClickHouse server authorization. 
+        host :str - IP or name of host with CH server. 
+        port :int - TCP port number for CH server. 8123 for http by default and 8443 for https.
+        db :str - name of database to connect. 
+
+
         remote_host :str - remote host name/ip address. 
         remote_tcp_port :int - TCP port of remote host. 
         username :str - username to access remote host. 
@@ -39,7 +47,7 @@ class ClickHouseConnector:
     ChBadDescription = "Connection to ClickHouse not established. Check credentials and ClickHouse server settings."
     ChSuccessDescription = "Connection to ClickHouse successfully established."
 
-    def __init__(self, logger, login, password, host, port, db, table, logTable=None, interface='http', ssh=None):
+    def __init__(self, logger, login, password, host, port, db, table, logTable=None, ssh=None):
         self.logger = logger
         self.login = login 
         self.password = password
@@ -48,7 +56,6 @@ class ClickHouseConnector:
         self.db = db 
         self.table = table 
         self.logTable = logTable
-        self.interface = interface
         self.ssh = ssh 
         if self.ssh is not None: 
             self.tunnel = self.establish_ssh_tunnel()
@@ -98,7 +105,7 @@ class ClickHouseConnector:
                 try: 
                     tunnel = sshtunnel.SSHTunnelForwarder(
                     host, port, ssh_username = login, ssh_password = password, 
-                    remote_bind_address = (host, remote_port_bind), 
+                    remote_bind_address = (remote_host_bind, remote_port_bind), 
                     local_bind_address = (local_host_bind, local_port_bind),
                     host_pkey_directories=[]
                     )
@@ -127,6 +134,12 @@ class ClickHouseConnector:
         return tunnel
     
     def establish_clickhouse_connection(self): 
+        """Method to establish connection with ClickHouse server.
+        
+        Arguments: 
+            self - uses global class' variables to establish connection
+
+        """
         classmethod = f"Class: {self.__class__.__name__}. Method: {self.establish_ssh_tunnel.__name__}"
         client = None
         
@@ -136,12 +149,20 @@ class ClickHouseConnector:
                                    description=ClickHouseConnector.ChBadDescription
                                    +ClickHouseConnector.SSHBadDescription).write_to_disk_incremental(classmethod)
         else: 
-            client = clickhouse_connect.get_client(host=self.host, port=self.port, username=self.login, password=self.password, interface=self.interface)
-            print("ClickHouse connection established.")
-            self.logger.add_to_log(response=ClickHouseConnector.SuccessCode, endpoint=ClickHouseConnector.ChEndpoint,
-                                   description=ClickHouseConnector.ChSuccessDescription).write_to_disk_incremental(classmethod)
-            
+            try:
+                client = clickhouse_connect.get_client(host=self.host, port=self.port, username=self.login, password=self.password
+                                                       )
+                print("ClickHouse connection established.")
+                self.logger.add_to_log(response=ClickHouseConnector.SuccessCode, endpoint=ClickHouseConnector.ChEndpoint,
+                                    description=ClickHouseConnector.ChSuccessDescription).write_to_disk_incremental(classmethod)
+            except:
+                print("Connection to ClickHouse not established.")
+                self.logger.add_to_log(response=ClickHouseConnector.BadCode, endpoint=ClickHouseConnector.ChEndpoint,
+                                   description=ClickHouseConnector.ChBadDescription).write_to_disk_incremental(classmethod)
         return client
+    
+
+    
         
 
 
