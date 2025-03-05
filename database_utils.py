@@ -52,6 +52,12 @@ class ClickHouseConnector:
     ChSuccessDescription = "Connection to ClickHouse successfully established."
     ChCloseDescription = "Connection to Clickhouse was successfully closed."
 
+    ChQueryBadDescription = "Query wasn't performed. Maybe user you logged with doesn't have permissions for that"
+    ChQuerySuccessDescription = "Query was performed successfully"
+
+    ChInsertBadDescription = "Insert to ClickHouse wasn't performed. Maybe there are not enough rights, or bad/no data"
+    ChInsertSuccessDescription = "Insert to ClickHouse was performed successfully."
+
 
     def __init__(self, logger, login, password, host, port, db, table, logTable=None, ssh=None):
         self.logger = logger
@@ -183,9 +189,21 @@ class ClickHouseConnector:
             self.logger.add_to_log(response =ClickHouseConnector.CloseCode, endpoint=ClickHouseConnector.SSHEndpoint, 
                                        description = ClickHouseConnector.SSHCloseDescription).write_to_disk_incremental(classmethod)
 
-    def query_data(self, query, parameters=None): 
-        self.ch_client.query(query, parameters)
-        pass
+    def query_data(self, query, **kwargs):
+        classmethod = f"Class: {self.__class__.__name__}. Method: {self.query_data.__name__}"
+        result = None
+        try: 
+            result = self.ch_client.query(query, **kwargs).result_rows
+            self.logger.add_to_log(response=ClickHouseConnector.SuccessCode, endpoint=ClickHouseConnector.ChEndpoint,
+                                    description=ClickHouseConnector.ChQuerySuccessDescription).write_to_disk_incremental(classmethod)
+        except: 
+            print("Query wasn't performed.")
+            self.logger.add_to_log(response=ClickHouseConnector.BadCode, endpoint=ClickHouseConnector.ChEndpoint,
+                                    description=ClickHouseConnector.ChQueryBadDescription).write_to_disk_incremental(classmethod)
+        return result
+    
+    
+
 
 
 
