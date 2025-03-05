@@ -1,5 +1,5 @@
 SELECT 
 	name 
-from system.tables
-where database = %(db)s and name = %(table)s;
+FROM system.tables
+WHERE database = %(db)s and name = %(table)s;
 
