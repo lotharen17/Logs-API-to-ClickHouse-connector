@@ -8,3 +8,5 @@ token_counter.json
 __pycache__/
 tests.py
 logs/*
+api_settings.json
+archieve/*

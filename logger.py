@@ -1,4 +1,5 @@
 from  datetime import datetime
+from routines_utils import UtilsSet
 # from datetime import timedelta
 import os 
 
@@ -21,11 +22,12 @@ class Logger:
     TAB_SEP = '\t'
     EOL_SEP = '\n'
 
-    def __init__(self, path='logs/logs.tsv', run_log_path = None):
-        self._run_log_path = run_log_path 
-        self._path = path
+    def __init__(self, path_continous='logs/logs.tsv', path_last_run = None):
+        self._path = path_continous
+        self._path_last = path_last_run
         self._log = ''
         self._log_line = ''
+        self.utils = UtilsSet()
 
     @property
     def log(self): 
@@ -61,41 +63,65 @@ class Logger:
         """Method to make incremental writes to local logfile.
         
         Arguments: 
-            self only, works with instance's global variables.
+            self, works with instance's global variables. Uses _path variable. If it's none - incremental log won't be written. 
+            classMethod :str , default None - name of class+method to print, where logger was called. 
         
         Returns: 
             self (suitable for methods chaining)
         """
-
-        def nested_writer(): 
-            """Function which takes atomic part of log (one line) from global environment (self) and writes them to logfile."""
-            with open(self._path, "a", encoding="utf-8", newline='\n') as f:
-                f.write(self._log_line)
-                print(f"Logline of {classMethod} job was successfully written to disk.")
-                self._log_line = ''
-
-        if os.path.exists(self._path): 
+        if self._path is not None: 
             try: 
-                nested_writer()
+                self.utils.write_to_file(self._log_line, self._path)
+                print(f"Logline of {classMethod} job was successfully written to disk.")
             except(OSError, IOError): 
-                print(f"You probably don't have an acess to {self._path} file.")
-        else: 
-            print(f"Path {self._path} doesn't exist")
-            try:
-                if len(self._path.split('/')) > 1: 
-                    dirpath = '/'.join(self._path.split('/')[:-1:])+'/'
-                    if not os.path.isdir(dirpath): 
-                        print(f"Directory {dirpath} doesn't exist")
-                        try: 
-                            os.makedirs(dirpath, exist_ok=True)
-                            print(f"Directory {dirpath} created")
-                        except(OSError, IOError): 
-                            print(f"Directory {dirpath} wasn't created. Probably, you don't have proper permission." )
-                
-                nested_writer()
-            except(OSError, IOError):
-                print(f"File {self._path} wasn't created. Probably, you don't have proper permission.")
+                print(f"You probably don't have and access to {self._path} or to create this file even in working directory.")
+            self._log_line = ''
         return self
+    
+    def write_to_disk_last_run(self): 
+        """Method to write last run's log to disk
+        """
+        if self._path_last is not None: 
+            try: 
+                self.utils.write_to_file(self._log, self._path_last)
+                print(f"Full log of this run has been written.")
+            except(OSError, IOError): 
+                print(f"You probably don't have and access to {self._path_last} or to create this file even in working directory.")
+                
+        return self
+
+
+
+
+        # def nested_writer(): 
+        #     """Function which takes atomic part of log (one line) from global environment (self) and writes them to logfile."""
+        #     with open(self._path, "a", encoding="utf-8", newline='\n') as f:
+        #         f.write(self._log_line)
+        #         print(f"Logline of {classMethod} job was successfully written to disk.")
+        #         self._log_line = ''
+
+        # if os.path.exists(self._path): 
+        #     try: 
+        #         nested_writer()
+        #     except(OSError, IOError): 
+        #         print(f"Log to file {self._path} wasn't written. Probably, you don't have proper permission to write to file or to create it.")
+        # else: 
+        #     print(f"Path {self._path} doesn't exist")
+        #     try:
+        #         if len(self._path.split('/')) > 1: 
+        #             dirpath = '/'.join(self._path.split('/')[:-1:])+'/'
+        #             if not os.path.isdir(dirpath): 
+        #                 print(f"Directory {dirpath} doesn't exist")
+        #                 try: 
+        #                     os.makedirs(dirpath, exist_ok=True)
+        #                     print(f"Directory {dirpath} created")
+        #                 except(OSError, IOError): 
+        #                     print(f"Directory {dirpath} wasn't created. Probably, you don't have proper permission." )
+                
+        #         nested_writer()
+        #     except(OSError, IOError):
+        #         print(f"File {self._path} wasn't created. Probably, you don't have proper permission.")
+        # return self
     
     def write_to_db(self, db_connection, table_name): 
         pass

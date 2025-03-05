@@ -202,7 +202,8 @@ class ClickHouseConnector:
                                     description=ClickHouseConnector.ChQueryBadDescription).write_to_disk_incremental(classmethod)
         return result
     
-    
+    def insert_datafile(self): 
+        pass
 
 
 
