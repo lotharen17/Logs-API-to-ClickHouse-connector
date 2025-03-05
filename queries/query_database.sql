@@ -1,4 +1,4 @@
 SELECT 
 	name
 FROM system.databases
-where name = %(db)s; 
+where name = %(db)s;

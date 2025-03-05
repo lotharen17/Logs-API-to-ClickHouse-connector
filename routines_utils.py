@@ -94,6 +94,7 @@ class UtilsSet:
     def read_sql_file(self, path):
         content = self.read_file(path)
         content = " ".join(line.strip() for line in content.splitlines())
+        content = content.strip()
         return content
     
     def read_json_file(self, path): 
