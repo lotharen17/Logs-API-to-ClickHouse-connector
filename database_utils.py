@@ -4,7 +4,9 @@ import sshtunnel
 
 
 class ClickHouseConnector:
-    """Class to create ClickHouse connection and (optionally) ssh tunnel.
+    """Class to create ClickHouse connection and (optionally) ssh tunnel. 
+    Currently support only HTTP transmission. If you need to make it safer - use SSH connection. Otherwise, it's pretty safe
+    to upload data through http on the same host. 
     
     Arguments:
         logger :instance of Logger object - logger to log all the operations inside. 
@@ -35,17 +37,21 @@ class ClickHouseConnector:
     """
 
 
-    BadCode = 504
+    BadCode = 500
     SuccessCode = 200
+    CloseCode = 205
 
     ChEndpoint = 'CH'
     SSHEndpoint = 'SSH'
 
     SSHBadDescription = "SSH connection not established. Check credentials and if ports are open."
     SSHSuccessDescription = "SSH connection successfully established."
+    SSHCloseDescription = "SSH tunnel was successfully closed."
 
     ChBadDescription = "Connection to ClickHouse not established. Check credentials and ClickHouse server settings."
     ChSuccessDescription = "Connection to ClickHouse successfully established."
+    ChCloseDescription = "Connection to Clickhouse was successfully closed."
+
 
     def __init__(self, logger, login, password, host, port, db, table, logTable=None, ssh=None):
         self.logger = logger
@@ -58,10 +64,10 @@ class ClickHouseConnector:
         self.logTable = logTable
         self.ssh = ssh 
         if self.ssh is not None: 
-            self.tunnel = self.establish_ssh_tunnel()
-        self.ch_client = self.establish_clickhouse_connection()
+            self.tunnel = self._establish_ssh_tunnel()
+        self.ch_client = self._establish_ch_connection()
                 
-    def establish_ssh_tunnel(self): 
+    def _establish_ssh_tunnel(self): 
         """Method to establish SSH tunnel, which will be then used for clickhouse connection.
     
         Arguments: self. All are taken from global ssh dictionary, which is a nested dictionary of ch_credentials.json config file. 
@@ -69,7 +75,7 @@ class ClickHouseConnector:
         Returns: tunnel object or None. 
         """
         sshtunnel.SSH_TIMEOUT = 10.0
-        classmethod = f"Class: {self.__class__.__name__}. Method: {self.establish_ssh_tunnel.__name__}"
+        classmethod = f"Class: {self.__class__.__name__}. Method: {self._establish_ssh_tunnel.__name__}"
 
         tunnel = None
 
@@ -133,14 +139,14 @@ class ClickHouseConnector:
                 
         return tunnel
     
-    def establish_clickhouse_connection(self): 
+    def _establish_ch_connection(self): 
         """Method to establish connection with ClickHouse server.
         
         Arguments: 
             self - uses global class' variables to establish connection
 
         """
-        classmethod = f"Class: {self.__class__.__name__}. Method: {self.establish_ssh_tunnel.__name__}"
+        classmethod = f"Class: {self.__class__.__name__}. Method: {self._establish_ch_connection.__name__}"
         client = None
         
         if self.ssh is not None and self.tunnel is None: 
@@ -161,6 +167,33 @@ class ClickHouseConnector:
                                    description=ClickHouseConnector.ChBadDescription).write_to_disk_incremental(classmethod)
         return client
     
+    def re_establish_connection(self):  
+        if self.ssh is not None: 
+            self.tunnel = self._establish_ssh_tunnel()
+        self.ch_client = self._establish_ch_connection()
+
+    def close_connections(self):
+        classmethod = f"Class: {self.__class__.__name__}. Method: {self.close_connections.__name__}"
+        if self.ch_client is not None: 
+            self.ch_client.close()
+            self.logger.add_to_log(response=ClickHouseConnector.CloseCode, endpoint=ClickHouseConnector.ChEndpoint,
+                                    description=ClickHouseConnector.ChCloseDescription).write_to_disk_incremental(classmethod)
+        if self.tunnel is not None: 
+            self.tunnel.close()
+            self.logger.add_to_log(response =ClickHouseConnector.CloseCode, endpoint=ClickHouseConnector.SSHEndpoint, 
+                                       description = ClickHouseConnector.SSHCloseDescription).write_to_disk_incremental(classmethod)
+
+    def query_data(self, query, parameters=None): 
+        self.ch_client.query(query, parameters)
+        pass
+
+
+
+
+    
+
+    
+#TO DO: to add gzip compression writing, not reading
 
     
         
