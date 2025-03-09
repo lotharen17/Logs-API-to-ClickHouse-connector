@@ -27,11 +27,10 @@ class AbstractRequest:
         __init__(self, counterId, token, params=None) - initialization of instance of class. 
         send_request(self, method = HTTP_METHOD) - to send request to Logs API. Also calls parse_response method. Returns self. 
         parse_response(self, response) - to parse response (get it's status code and body and stores it as instance's properties.)
-    
     """
+
     BASE_URL = 'https://api-metrika.yandex.net/management/v1/counter/%s/'
     OAuth = 'OAuth %s' 
-
 
     def __init__(self, counterId, token, params=None, method = 'GET'):
         self.counterId = counterId
@@ -43,28 +42,30 @@ class AbstractRequest:
         self.response_code = None 
         self.response_body = None
     
-            
     def send_request(self):
         raw_response = requests.request(self.method, self.url, headers=self.headers, params=self.params)
         self.parse_response(raw_response)
+        self.deep_parse_response()
+        self.is_success_logic()
         return self
-
 
     def parse_response(self, response):
         self.response_code = response.status_code
-        if self.response_code == 200: 
+        try: 
             self.response_body = response.json()
-            self.is_success = True
-        else: 
+        except(ValueError): 
             self.response_body = response.text
         return self
+    
+    def deep_parse_response(self): 
+        pass
     
     def is_success_logic(self):
         pass
 
 
-
 class LogListRequests(AbstractRequest): 
+    ##TO do: to add logger, probably both here and into abstract class? Or no? 
 
     HTTP_METHOD = 'GET'
     SPECIFIC_URL = 'logrequests'
@@ -74,11 +75,22 @@ class LogListRequests(AbstractRequest):
         self.method = __class__.HTTP_METHOD
         self.url+= __class__.SPECIFIC_URL
 
+    def deep_parse_response(self):
+        if self.response_code == 200: 
+            self.response_body = self.response_body.get('requests')
+        else: 
+            self.response_body = self.response_body.get('message')
+        return None
+                
+    def is_success_logic(self):
+        self.is_success = self.response_code == 200 and len(self.response_body) < 10
+        return None
+
 
 
     
 
-myrequest = LogListRequests(14112952, 'TTTT')#"y0_AgAAAAABvdAPAAzDOgAAAAEYJr3cAACIUxevu5dFWrC6TvDR78ChYJfR6w")
+myrequest = LogListRequests(14112952, 'y0_AgAAAAABvdAPAAzDOgAAAAEYJr3cAACIUxevu5dFWrC6TvDR78ChYJfR6w')#"")
 myrequest.send_request()
 
 print(myrequest.url)
@@ -87,7 +99,7 @@ print(myrequest.response_code)
 print(myrequest.response_body)
 print(myrequest.method)
 
-abstract_request = AbstractRequest(111, 'Auth343')
+print(myrequest.is_success)
 
 # def requests_sender(method, url, headers, params='', data_format='json', logging=True):
 #     """Function to send requests. Args: method, url, params, kwarg = params('' by default)"""
