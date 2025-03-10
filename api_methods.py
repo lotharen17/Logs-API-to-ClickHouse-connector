@@ -1,5 +1,6 @@
 import requests
 
+
 class AbstractRequest:
     """Abstract class to send requests. Will be inherited by concrete classes
     
@@ -30,23 +31,29 @@ class AbstractRequest:
     """
 
     BASE_URL = 'https://api-metrika.yandex.net/management/v1/counter/%s/'
+    SPECIFIC_URL = ''
     OAuth = 'OAuth %s' 
+    HTTP_METHOD = 'GET' 
+    SUCCESS_CODE = 200
+    ERROR_MESSAGE_KEY = 'message'
 
-    def __init__(self, counterId, token, params=None, method = 'GET'):
+    def __init__(self, counterId, token, log_writer=None, params=None):
         self.counterId = counterId
         self.headers =  { 'Authorization': __class__.OAuth%token}
         self.params = params
-        self.method = method
-        self.url = __class__.BASE_URL%counterId
+        self.method = self.__class__.HTTP_METHOD
+        self.url = __class__.BASE_URL%counterId +self.__class__.SPECIFIC_URL
         self.is_success = False 
         self.response_code = None 
         self.response_body = None
+        self.log = log_writer
     
     def send_request(self):
         raw_response = requests.request(self.method, self.url, headers=self.headers, params=self.params)
         self.parse_response(raw_response)
         self.deep_parse_response()
         self.is_success_logic()
+        self.log_it()
         return self
 
     def parse_response(self, response):
@@ -58,48 +65,192 @@ class AbstractRequest:
         return self
     
     def deep_parse_response(self): 
-        pass
-    
+        if self.response_code != self.__class__.SUCCESS_CODE: 
+            try: 
+                self.response_body = self.response_body.get(__class__.ERROR_MESSAGE_KEY)
+            except AttributeError: 
+                print("Request returned error, but there is no valid JSON in response body.")
+        
     def is_success_logic(self):
         pass
 
+    def log_it(self): 
+        classmethod = f"Class: {self.__class__.__name__}. Method: {self.__class__.log_it.__name__}"
+        description = str(self.response_body)[:50]
+        endpoint = self.url.removeprefix(__class__.BASE_URL)
+        self.log.add_to_log(response=self.response_code, endpoint=endpoint, description=description).write_to_disk_incremental(classmethod)
 
-class LogListRequests(AbstractRequest): 
-    ##TO do: to add logger, probably both here and into abstract class? Or no? 
 
-    HTTP_METHOD = 'GET'
+class LogList(AbstractRequest): 
+
     SPECIFIC_URL = 'logrequests'
+    MAX_REQUESTS_QUEUE = 10
+    SUCCESS_RESPONSE_KEY  = 'requests'
 
     def __init__(self, counterId, token, params=None):
         super().__init__(counterId, token, params)
-        self.method = __class__.HTTP_METHOD
-        self.url+= __class__.SPECIFIC_URL
 
     def deep_parse_response(self):
-        if self.response_code == 200: 
-            self.response_body = self.response_body.get('requests')
-        else: 
-            self.response_body = self.response_body.get('message')
-        return None
-                
+        super().deep_parse_response()
+        if self.response_code == self.__class__.SUCCESS_CODE: 
+            self.response_body = self.response_body.get(self.__class__.SUCCESS_RESPONSE_KEY)
+        return self
+          
     def is_success_logic(self):
-        self.is_success = self.response_code == 200 and len(self.response_body) < 10
-        return None
+        self.is_success = self.response_code == self.__class__.SUCCESS_CODE and len(self.response_body) < self.__class__.MAX_REQUESTS_QUEUE
+        return self
+    
+
+class LogEvaluation(AbstractRequest): 
+
+    SPECIFIC_URL = 'logrequests/evaluate'
+    SUCCESS_RESPONSE_KEY  = 'log_request_evaluation'
+    SUCCESS_CONDITION_KEY = 'possible'
+
+    def __init__(self, counterId, token, log_writer=None, params=None):
+        super().__init__(counterId, token, log_writer, params)
+
+    def deep_parse_response(self):
+        super().deep_parse_response()
+        if self.response_code == self.__class__.SUCCESS_CODE: 
+            self.response_body = self.response_body.get(self.__class__.SUCCESS_RESPONSE_KEY)
+        return self
+
+    def is_success_logic(self):
+        self.is_success = self.response_code == self.__class__.SUCCESS_CODE and self.response_body.get(self.__class__.SUCCESS_CONDITION_KEY)
+        return self
+
+    
+
+class CreateLog(AbstractRequest):
+
+    HTTP_METHOD = "POST"
+    SPECIFIC_URL = "logrequests"
+    ENCODING = 'gzip'
+    SUCCESS_RESPONSE_KEY  = 'log_request'
+    SUCCESS_CONDITION_KEY = 'request_id'
+
+    def __init__(self, counterId, token, log_writer=None, params=None):
+        super().__init__(counterId, token, log_writer, params)
+        self.headers['Accept-Encoding'] = self.__class__.ENCODING
+        self.request_id = None
+
+    def deep_parse_response(self):
+        super().deep_parse_response()
+        if self.response_code == self.__class__.SUCCESS_CODE: 
+            self.response_body = self.response_body.get(self.__class__.SUCCESS_RESPONSE_KEY)
+            self.request_id = self.response_body.get(self.__class__.SUCCESS_CONDITION_KEY)
+        return self
+       
+    def is_success_logic(self):
+        self.is_success = self.response_code == self.__class__.SUCCESS_CODE and self.request_id is not None
+        return self
+    
+
+class CleanProcessedLog(AbstractRequest): 
+
+    HTTP_METHOD = "POST"
+    SPECIFIC_URL = "logrequest/%s/clean"
+    SUCCESS_RESPONSE_KEY  = 'log_request'
+    SUCCESS_CONDITION_KEY = 'request_id'
+    SUCCESS_STATUS_KEY = 'status'
+
+    def __init__(self, counterId, request_id,  token, log_writer=None, params=None):
+        super().__init__(counterId, token, log_writer, params)
+        self.url = self.__class__.BASE_URL%counterId + self.__class__.SPECIFIC_URL%request_id
+        self.request_id = request_id
+        self.cleared_request_id = None
+        self.status = None
+
+    def deep_parse_response(self):
+        super().deep_parse_response()
+        if self.response_code == self.__class__.SUCCESS_CODE: 
+            self.response_body = self.response_body.get(self.__class__.SUCCESS_RESPONSE_KEY)
+            self.cleared_request_id = self.response_body.get(self.__class__.SUCCESS_CONDITION_KEY)
+            self.status = self.response_body.get(self.__class__.SUCCESS_STATUS_KEY)
+        return self
+    
+    def is_success_logic(self):
+        self.is_success = self.response_code == self.__class__.SUCCESS_CODE and self.request_id == self.cleared_request_id
+        return self 
+    
+
+class CleanPendingLog(CleanProcessedLog):
+
+    SPECIFIC_URL = "logrequest/%s/cancel"
+
+    def __init__(self, counterId, request_id, token, log_writer=None, params=None):
+        super().__init__(counterId, request_id, token, log_writer, params)
+
+
+class StatusLog(CleanProcessedLog): 
+
+    SPECIFIC_URL = "logrequest/%s"
+    HTTP_METHOD = "GET"
+    SUCCESS_PARTS_KEY = "parts"
+    SUCCESS_STATUS_TO_DOWDNLOAD = "processed"
+
+    def __init__(self, counterId, request_id, token, log_writer=None, params=None):
+        super().__init__(counterId, request_id, token, log_writer, params)
+        del self.cleared_request_id
+        self.parts = []
+        self.parts_amount = 0
+    
+    def deep_parse_response(self):
+        super().deep_parse_response()
+        if self.response_code == self.__class__.SUCCESS_CODE: 
+            del self.cleared_request_id
+            if self.status == self.__class__.SUCCESS_STATUS_TO_DOWDNLOAD:
+                self.parts = self.response_body.get(self.__class__.SUCCESS_PARTS_KEY)
+                self.parts_amount = len(self.parts)
+    
+    def is_success_logic(self):
+        self.is_success = self.response_code == self.__class__.SUCCESS_CODE and self.status == self.__class__.SUCCESS_STATUS_TO_DOWDNLOAD and self.parts_amount > 0
+    
+
+class DownloadLogPart(AbstractRequest):
+
+    SPECIFIC_URL = 'logrequest/%s/part/'
+    VARIABLE_PART_URL = '%s/download'
+    ENCODING = 'gzip'
+    
+    def __init__(self, counterId, request_id, token, log_writer=None, params=None):
+        super().__init__(counterId, token, log_writer, params)
+        self.url = self.url%request_id
+        self.url += self.__class__.VARIABLE_PART_URL
+        self.headers['Accept-Encoding'] = self.__class__.ENCODING
+
+    def send_request(self, part):
+        self.url = self.url%part
+        super().send_request()
+
+    def log_it(self):
+        pass
+    
+    
+
+
 
 
 
     
 
-myrequest = LogListRequests(14112952, 'y0_AgAAAAABvdAPAAzDOgAAAAEYJr3cAACIUxevu5dFWrC6TvDR78ChYJfR6w')#"")
-myrequest.send_request()
 
-print(myrequest.url)
 
-print(myrequest.response_code)
-print(myrequest.response_body)
-print(myrequest.method)
 
-print(myrequest.is_success)
+    
+
+
+    
+
+
+    
+
+
+
+
+    
+
 
 # def requests_sender(method, url, headers, params='', data_format='json', logging=True):
 #     """Function to send requests. Args: method, url, params, kwarg = params('' by default)"""

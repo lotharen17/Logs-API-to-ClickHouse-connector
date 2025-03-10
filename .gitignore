@@ -7,6 +7,7 @@ token_counter.json
 .ipynb_checkpoints
 __pycache__/
 tests.py
+low_tests.py
 logs/*
 api_settings.json
 archieve/*
