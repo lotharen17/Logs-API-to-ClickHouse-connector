@@ -1,0 +1,7 @@
+{
+	"run_columns_test": true,
+	"run_log_test": true, 
+	"create_data_db_on_fail":true, 
+	"create_log_table_on_fail":true, 
+	"continue_on_test_fail":true
+}

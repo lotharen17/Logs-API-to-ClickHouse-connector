@@ -70,9 +70,9 @@ class Logger:
         if self._path is not None: 
             try: 
                 self.utils.write_to_file(self._log_line, self._path)
-                print(f"Logline of {classMethod} job was successfully written to disk.")
             except(OSError, IOError): 
                 print(f"You probably don't have and access to {self._path} or to create this file even in working directory.")
+                print(f"Logline of {classMethod} job wasn't written to disk.")
             self._log_line = ''
         return self
     

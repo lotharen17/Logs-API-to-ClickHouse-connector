@@ -9,5 +9,6 @@ __pycache__/
 tests.py
 low_tests.py
 logs/*
-api_settings.json
+api_credentials.json
+ch_credentials.json
 archieve/*
