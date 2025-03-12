@@ -1,5 +1,5 @@
 from  datetime import datetime
-from routines_utils import UtilsSet
+from utils.routines_utils import UtilsSet
 
 class Logger:
     """Creates a piece of log and then writes it to disk/db.
