@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS %(db)s.%(logTable)s
+CREATE OR REPLACE TABLE %(db)s.%(logTable)s
 (	
 	datetime 			DateTime NOT NULL, 
 	response 			INT NOT NULL,

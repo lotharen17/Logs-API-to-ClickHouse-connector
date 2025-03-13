@@ -1,4 +1,4 @@
 SELECT 
 	name 
 FROM system.tables
-WHERE database = %(db)s and name = %(logTable)s;
+WHERE database = %(db)s AND name = %(logTable)s; 

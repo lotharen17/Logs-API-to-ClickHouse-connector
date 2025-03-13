@@ -1,9 +1,8 @@
 {	
-	"run_db_test":true, 
-	"ignore_db_test":false,
+	"run_db_table_test":true, 
 	"run_columns_test": true,
-	"run_log_test": true, 
-	"create_data_db_on_fail": true, 
+	"continue_on_columns_test_fail": true,
+	"run_log_table_test": true, 
 	"create_log_table_on_fail": true, 
-	"continue_on_test_fail": true
+	"continue_on_log_table_creaion_fail": true
 }

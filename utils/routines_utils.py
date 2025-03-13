@@ -2,10 +2,13 @@ import os
 import json
 
 
+class DatabaseException(Exception): 
+    pass
+
+
 class UtilsSet:
 # Files reads/writes to handle with  except(OSError, IOError) in wrappers.       print(f"You probably don't have an acess to {path} file.")
     """Class to speed up usage of routine operations of reading/writing of files in project"""
-
 
     def __init__(self): 
         return None

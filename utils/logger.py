@@ -1,5 +1,5 @@
 from  datetime import datetime
-from utils.routines_utils import UtilsSet
+from  .routines_utils import UtilsSet
 
 class Logger:
     """Creates a piece of log and then writes it to disk/db.
@@ -85,7 +85,6 @@ class Logger:
                 print(f"Full log of this run has been written.")
             except(OSError, IOError): 
                 print(f"You probably don't have and access to {self._path_last} or to create this file even in working directory.")
-
         return self
 
     def write_to_db(self, db_connection, table_name): 

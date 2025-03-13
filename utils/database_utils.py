@@ -1,4 +1,3 @@
-from utils.logger import Logger
 import clickhouse_connect
 import sshtunnel
 
@@ -209,9 +208,10 @@ class ClickHouseConnector:
     def create_table(self, query, table, **kwargs):
         classmethod = f"Class: {self.__class__.__name__}. Method: {self.create_table.__name__}"
         table_name = table
-        result = None
+        result = False
         try: 
-            result = self.ch_client.command(query, **kwargs).as_query_result().summary
+            self.ch_client.command(query, **kwargs).as_query_result()
+            result = True
             self.logger.add_to_log(response=ClickHouseConnector.SuccessCode, endpoint=ClickHouseConnector.ChEndpoint,
                                     description=ClickHouseConnector.ChCreateTableSuccessDescription%table_name).write_to_disk_incremental(classmethod)
             print(f"Table {table_name} was successfully created.")
