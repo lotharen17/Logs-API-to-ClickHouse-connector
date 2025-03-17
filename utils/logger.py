@@ -84,7 +84,7 @@ class Logger:
                 self.utils.write_to_file(self._log, self._path_last)
                 print(f"Full log of this run has been written.")
             except(OSError, IOError): 
-                print(f"You probably don't have and access to {self._path_last} or to create this file even in working directory.")
+                print(f"You probably don't have an access to {self._path_last} or to create this file even in working directory.")
         return self
 
     def write_to_db(self, db_connection, table_name): 

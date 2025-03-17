@@ -69,7 +69,10 @@ class AbstractRequest:
             try: 
                 self.response_body = self.response_body.get(__class__.ERROR_MESSAGE_KEY)
             except AttributeError: 
-                print("Request returned error, but there is no valid JSON in response body.")
+                try: 
+                    self.response_body = self.response_body[:100]
+                except: 
+                    print("There is no body in response.")
         
     def is_success_logic(self):
         pass
@@ -226,15 +229,17 @@ class DownloadLogPart(AbstractRequest):
     
     def __init__(self, counterId, request_id, token, log_writer=None, params=None):
         super().__init__(counterId, token, log_writer, params)
-        self.url = self.url%request_id
-        self.url += self.__class__.VARIABLE_PART_URL
+        self.url_const = self.url%request_id
 
     def send_request(self, part):
-        self.url = self.url%part
+        self.url = self.url_const + self.__class__.VARIABLE_PART_URL%part
         super().send_request()
 
     def log_it(self):
         pass
+
+    def is_success_logic(self):
+        self.is_success = self.response_code == self.__class__.SUCCESS_CODE
     
     
 

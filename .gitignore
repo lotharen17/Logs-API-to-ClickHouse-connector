@@ -12,3 +12,4 @@ logs/*
 api_credentials.json
 ch_credentials.json
 archieve/*
+data/*

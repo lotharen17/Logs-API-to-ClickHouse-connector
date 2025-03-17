@@ -1,11 +1,18 @@
 {	
+	"log_continuous_path": "logs/logs.log",
+	"log_last_run_path": null, 
+	"temporary_data_path": "data/", 
+	"delete_temp_data": null, 
 	"run_db_table_test":true, 
 	"run_columns_test": true,
 	"continue_on_columns_test_fail": true,
 	"run_log_table_test": true, 
 	"create_log_table_on_fail": true, 
-	"continue_on_log_table_creaion_fail": true, 
-	"clear_log_queue": true,
-	"frequency_log_status_check_sec": 30, 
-	"log_status_wait_timeout_min": 30
+	"continue_on_log_table_creation_fail": true, 
+	"clear_api_queue": true,
+	"frequency_api_status_check_sec": 30, 
+	"api_status_wait_timeout_min": 30, 
+	"data_loss_tolerance_perc": 10, 
+	"bad_data_tolerance_perc": 15,
+	"absolute_db_format_errors_tolerance": 30
 }

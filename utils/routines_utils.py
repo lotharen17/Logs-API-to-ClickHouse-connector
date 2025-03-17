@@ -39,12 +39,10 @@ class UtilsSet:
             nested_writer()
 
         else: 
-            print(f"Path {path} doesn't exist")
             if len(path.split('/')) > 1: 
                 dirpath = '/'.join(path.split('/')[:-1:])+'/'
                 filename = path.split('/')[-1]
                 if not os.path.isdir(dirpath): 
-                    print(f"Directory {dirpath} doesn't exist")
                     try: 
                         self.create_folder(dirpath)
                     except(OSError, IOError): 
@@ -70,12 +68,10 @@ class UtilsSet:
             nested_writer()
 
         else: 
-            print(f"Path {path} doesn't exist")
             if len(path.split('/')) > 1: 
                 dirpath = '/'.join(path.split('/')[:-1:])+'/'
                 filename = path.split('/')[-1]
                 if not os.path.isdir(dirpath): 
-                    print(f"Directory {dirpath} doesn't exist")
                     try: 
                         self.create_folder(dirpath)
                     except(OSError, IOError): 
