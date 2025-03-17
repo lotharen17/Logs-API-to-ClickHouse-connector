@@ -9,16 +9,20 @@ import time
 
 class MainFlowWrapper: 
 
+    SUCCESS_CODE = 200 
     LOG_TABLE_FIELDS = ['datetime', 'response', 'endpoint', 'description']
     DEFAULT_ERROR_CODE = 500
     DEFAULT_REQUEST_SLEEP = 0.34
     DEFAULT_API_QUERY_RETRIES = 3
-
+    BAD_STATUS_CODES = ['canceled', 'cleaned_by_user', 'cleaned_automatically_as_too_old', 'processing_failed', 'awaiting_retry']
+    
     def __init__(self, ch_credentials, api_settings, global_settings, queries):
         self.logger = Logger()
         self.ch_credentials = ch_credentials
         self.api_settings = api_settings
         self.global_settings = global_settings
+        self.frequency = self.global_settings.get('frequency_log_status_check_sec')
+        self.status_timeout = self.global_settings.get('log_status_wait_timeout_min')*60
         self.queries = queries
         self.counterId = self.api_settings.get('counter')
         self.token = self.api_settings.get('token')
@@ -112,7 +116,7 @@ class MainFlowWrapper:
                 time.sleep(self.__class__.DEFAULT_REQUEST_SLEEP)
                 log_list = LogList(self.counterId, self.token, self.logger)
                 log_list.send_request()
-                if log_list.response_code == 200 and len(log_list.response_body) > 0: 
+                if log_list.response_code == self.__class__.SUCCESS_CODE and len(log_list.response_body) > 0: 
                     requests_deleted = 0
                     for request in log_list.response_body:
                         time.sleep(self.__class__.DEFAULT_REQUEST_SLEEP)
@@ -151,7 +155,7 @@ class MainFlowWrapper:
                 raise FlowException("Log creation request cannot be created for some reason. Please, try later.")
     
         else: 
-            raise FlowException("The request cannot be evaluated. Please, reduce dates range or reduce params amount.")
+            raise FlowException("The request wasn't evaluated or cannot be evaluated. Please, check sequence of methods calls, reduce dates range or reduce params amount.")
         
 
     def delete_log(self, repeat = 0):
@@ -165,6 +169,39 @@ class MainFlowWrapper:
         elif not(self.deletion.is_success) and repeat < self.__class__.DEFAULT_API_QUERY_RETRIES: 
             repeat+=1
             return self.delete_log(repeat)
+        
+
+    def status_check(self, repeat=0):
+        if self.log_request.is_success:
+            if self.frequency*repeat <= self.status_timeout: 
+                time.sleep(self.frequency)
+                self.status_request = StatusLog(self.counterId, self.request_id, self.token, self.logger)
+                if self.status_request.is_success: 
+                    self.parts = self.status_request.parts
+                    self.parts_amount = self.status_request.parts_amount
+                    return self
+                elif self.status_request.response_code == self.__class__.SUCCESS_CODE: 
+                    if self.status_request.status in self.__class__.BAD_STATUS_CODES:
+                        raise FlowException(f"Log wasn't processed well for some reason. It had status: {self.status_request.status}.")
+                    else:
+                        repeat+=1 
+                        return self.status_check(repeat)
+                else:
+                    repeat+=1
+                    return self.status_check(repeat)
+            else: 
+                raise FlowException(f"Log wasn't cooked for timeout time: {self.status_timeout/60} mins.")
+            
+        else: 
+            raise FlowException("The request wasn't created. Please, check sequence of methods calls.")
+        
+    def log_downloader(self, repeat=0, bad_parts=None):
+        pass 
+
+
+        
+    
+
         
     
     

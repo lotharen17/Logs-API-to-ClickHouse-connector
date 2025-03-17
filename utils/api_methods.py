@@ -207,7 +207,16 @@ class StatusLog(CleanProcessedLog):
                 self.parts_amount = len(self.parts)
     
     def is_success_logic(self):
-        self.is_success = self.response_code == self.__class__.SUCCESS_CODE and self.status == self.__class__.SUCCESS_STATUS_TO_DOWDNLOAD and self.parts_amount > 0
+        self.is_success = self.response_code == self.__class__.SUCCESS_CODE and self.status == self.__class__.SUCCESS_STATUS_TO_DOWDNLOAD
+
+    def log_it(self):
+        if self.log is not None: 
+            classmethod = f"Class: {self.__class__.__name__}. Method: {self.__class__.log_it.__name__}"
+            description = f"Request id: {self.request_id}. Status: {self.status}. Parts amount: {self.parts_amount}."
+            endpoint = self.url.removeprefix(__class__.BASE_URL)
+            self.log.add_to_log(response=self.response_code, endpoint=endpoint, description=description).write_to_disk_incremental(classmethod)
+        else: 
+            print("Log doesn't exist.")
     
 
 class DownloadLogPart(AbstractRequest):

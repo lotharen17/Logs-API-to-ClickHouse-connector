@@ -5,5 +5,7 @@
 	"run_log_table_test": true, 
 	"create_log_table_on_fail": true, 
 	"continue_on_log_table_creaion_fail": true, 
-	"clear_log_queue": true
+	"clear_log_queue": true,
+	"frequency_log_status_check_sec": 30, 
+	"log_status_wait_timeout_min": 30
 }
