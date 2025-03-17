@@ -75,10 +75,13 @@ class AbstractRequest:
         pass
 
     def log_it(self): 
-        classmethod = f"Class: {self.__class__.__name__}. Method: {self.__class__.log_it.__name__}"
-        description = str(self.response_body)[:50]
-        endpoint = self.url.removeprefix(__class__.BASE_URL)
-        self.log.add_to_log(response=self.response_code, endpoint=endpoint, description=description).write_to_disk_incremental(classmethod)
+        if self.log is not None: 
+            classmethod = f"Class: {self.__class__.__name__}. Method: {self.__class__.log_it.__name__}"
+            description = str(self.response_body)[:50]
+            endpoint = self.url.removeprefix(__class__.BASE_URL)
+            self.log.add_to_log(response=self.response_code, endpoint=endpoint, description=description).write_to_disk_incremental(classmethod)
+        else: 
+            print("Log doesn't exist.")
 
 
 class LogList(AbstractRequest): 
@@ -87,8 +90,8 @@ class LogList(AbstractRequest):
     MAX_REQUESTS_QUEUE = 10
     SUCCESS_RESPONSE_KEY  = 'requests'
 
-    def __init__(self, counterId, token, params=None):
-        super().__init__(counterId, token, params)
+    def __init__(self, counterId, token, log_writer = None, params=None):
+        super().__init__(counterId, token, log_writer, params)
 
     def deep_parse_response(self):
         super().deep_parse_response()
@@ -189,6 +192,7 @@ class StatusLog(CleanProcessedLog):
     HTTP_METHOD = "GET"
     SUCCESS_PARTS_KEY = "parts"
     SUCCESS_STATUS_TO_DOWDNLOAD = "processed"
+    PART_INDEX_KEY = "part_number"
 
     def __init__(self, counterId, request_id, token, log_writer=None, params=None):
         super().__init__(counterId, request_id, token, log_writer, params)
@@ -201,7 +205,7 @@ class StatusLog(CleanProcessedLog):
         if self.response_code == self.__class__.SUCCESS_CODE: 
             del self.cleared_request_id
             if self.status == self.__class__.SUCCESS_STATUS_TO_DOWDNLOAD:
-                self.parts = self.response_body.get(self.__class__.SUCCESS_PARTS_KEY)
+                self.parts = [part.get(self.__class__.PART_INDEX_KEY) for part in self.response_body.get(self.__class__.SUCCESS_PARTS_KEY)]
                 self.parts_amount = len(self.parts)
     
     def is_success_logic(self):

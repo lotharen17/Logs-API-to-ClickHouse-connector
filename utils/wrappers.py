@@ -19,7 +19,7 @@ class MainFlowWrapper:
         self.queries = queries
         self.counterId = self.api_settings.get('counter')
         self.token = self.api_settings.get('token')
-        self.params = api_settings
+        self.params = api_settings.copy()
         self.params.pop('token', None)
         self.params.pop('counter', None)
         #Let's call connection establishing from the start. 
