@@ -1,4 +1,6 @@
 import clickhouse_connect
+import clickhouse_connect.driver
+import clickhouse_connect.driver.tools
 import sshtunnel
 
 
@@ -34,6 +36,9 @@ class ClickHouseConnector:
     Returns: 
         tunnel :instance of SSHtunnel class or None - SSH tunnel to connect. 
     """
+
+    FORMAT = "TSVWithNames" #Logs API format of response. 
+
 
     BadCode = 500
     SuccessCode = 200
@@ -221,9 +226,10 @@ class ClickHouseConnector:
                                     description=ClickHouseConnector.ChCreateTableBadDescription%table_name).write_to_disk_incremental(classmethod)
         return result
     
-    def insert_datafile(self): 
-        pass
-
+    def insert_datafile(self, file, settings=None): 
+        #To do: to think about how to make this less idiotic. 
+        clickhouse_connect.driver.tools.insert_file(self.ch_client,self.table, file, settings=settings, database = self.db, fmt = ClickHouseConnector.FORMAT)
+        
 
 
 

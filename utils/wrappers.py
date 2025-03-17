@@ -264,8 +264,11 @@ class MainFlowWrapper:
             else: 
                 print("Nothing to download")
 
-        def write_data_to_db(self):
+    def write_data_to_db(self):
+        for file in self.files:
             pass
+            
+
 
     
 
