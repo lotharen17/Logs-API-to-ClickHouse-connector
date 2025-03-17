@@ -4,12 +4,14 @@ from .routines_utils import *
 from .logger import Logger
 from .database_utils import ClickHouseConnector
 from .api_methods import * 
+import time
 
 
 class MainFlowWrapper: 
 
     LOG_TABLE_FIELDS = ['datetime', 'response', 'endpoint', 'description']
     DEFAULT_ERROR_CODE = 500
+    DEFAULT_REQUEST_SLEEP = 0.34
 
     def __init__(self, ch_credentials, api_settings, global_settings, queries):
         self.logger = Logger()
@@ -98,6 +100,47 @@ class MainFlowWrapper:
                 print(f"Query of {self.ch_credentials.get('logTable')} wasn't successfull")
                 if self.global_settings.get('continue_on_log_table_creaion_fail'): 
                     raise DatabaseException(f"Table {self.ch_credentials.get('logTable')} or its columns weren't queried. Probably, not enough rights or other query issue")
+                
+    def check_log_evaluation(self): 
+        self.log_evaluation = LogEvaluation(self.counterId, self.token, self.logger, self.params)
+        self.log_evaluation.send_request()
+        if not self.log_evaluation.is_success:
+            if not self.global_settings.get('clear_log_queue'): 
+                raise FlowException(f"Request cannot be performed and you didn't allow to clear requests queue.\n See: clear_log_queue parameter in global_config.json")
+            else: 
+                time.sleep(self.__class__.DEFAULT_REQUEST_SLEEP)
+                log_list = LogList(self.counterId, self.token, self.logger)
+                log_list.send_request()
+                if log_list.response_code == 200 and len(log_list.response_body) > 0: 
+                    requests_deleted = 0
+                    for request in log_list.response_body:
+                        time.sleep(self.__class__.DEFAULT_REQUEST_SLEEP)
+                        request_status = request.get('status')
+                        request_id = request.get('request_id')
+                        if request_status == 'created':
+                            clear_old_request = CleanPendingLog(self.counterId, request_id, self.token, self.logger)
+                        else:
+                            clear_old_request = CleanProcessedLog(self.counterId, request_id, self.token, self.logger)
+                        clear_old_request.send_request()
+                        if clear_old_request.is_success: 
+                            requests_deleted += 1
+                        del clear_old_request
+                    print(f"Deleted {requests_deleted} requests in queue.")
+                    self.log_evaluation.send_request()
+                    if not(self.log_evaluation.is_success): 
+                        raise FlowException("The queue was cleared, but your request cannot be performed anyway.\n Please, make date range smaller or reduce params amount.")
+
+                else: 
+                    raise FlowException(f"The queue is empty, but your request cannot be performed anyway.\n Please, make date range smaller or reduce params amount.")
+        return self
+    
+    def create_log_request(self): 
+        pass
+
+
+    
+
+
                 
             
 

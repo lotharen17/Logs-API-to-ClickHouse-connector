@@ -129,13 +129,11 @@ class CreateLog(AbstractRequest):
 
     HTTP_METHOD = "POST"
     SPECIFIC_URL = "logrequests"
-    ENCODING = 'gzip'
     SUCCESS_RESPONSE_KEY  = 'log_request'
     SUCCESS_CONDITION_KEY = 'request_id'
 
     def __init__(self, counterId, token, log_writer=None, params=None):
         super().__init__(counterId, token, log_writer, params)
-        self.headers['Accept-Encoding'] = self.__class__.ENCODING
         self.request_id = None
 
     def deep_parse_response(self):
@@ -216,13 +214,11 @@ class DownloadLogPart(AbstractRequest):
 
     SPECIFIC_URL = 'logrequest/%s/part/'
     VARIABLE_PART_URL = '%s/download'
-    ENCODING = 'gzip'
     
     def __init__(self, counterId, request_id, token, log_writer=None, params=None):
         super().__init__(counterId, token, log_writer, params)
         self.url = self.url%request_id
         self.url += self.__class__.VARIABLE_PART_URL
-        self.headers['Accept-Encoding'] = self.__class__.ENCODING
 
     def send_request(self, part):
         self.url = self.url%part

@@ -5,6 +5,9 @@ import json
 class DatabaseException(Exception): 
     pass
 
+class FlowException(Exception): 
+    pass
+
 
 class UtilsSet:
 # Files reads/writes to handle with  except(OSError, IOError) in wrappers.       print(f"You probably don't have an acess to {path} file.")

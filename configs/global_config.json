@@ -4,5 +4,6 @@
 	"continue_on_columns_test_fail": true,
 	"run_log_table_test": true, 
 	"create_log_table_on_fail": true, 
-	"continue_on_log_table_creaion_fail": true
+	"continue_on_log_table_creaion_fail": true, 
+	"clear_log_queue": true
 }
