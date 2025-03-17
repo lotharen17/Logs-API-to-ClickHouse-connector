@@ -12,6 +12,7 @@ class MainFlowWrapper:
     LOG_TABLE_FIELDS = ['datetime', 'response', 'endpoint', 'description']
     DEFAULT_ERROR_CODE = 500
     DEFAULT_REQUEST_SLEEP = 0.34
+    DEFAULT_API_QUERY_RETRIES = 3
 
     def __init__(self, ch_credentials, api_settings, global_settings, queries):
         self.logger = Logger()
@@ -134,8 +135,41 @@ class MainFlowWrapper:
                     raise FlowException(f"The queue is empty, but your request cannot be performed anyway.\n Please, make date range smaller or reduce params amount.")
         return self
     
-    def create_log_request(self): 
-        pass
+    def create_log_request(self, repeat = 0): 
+        time.sleep(self.__class__.DEFAULT_REQUEST_SLEEP)
+        print(self.log_evaluation.is_success)
+        if self.log_evaluation.is_success: 
+            self.log_request = CreateLog(self.counterId, self.token, self.logger, params=self.params)
+            self.log_request.send_request()
+            if self.log_request.is_success: 
+                self.request_id = self.log_request.request_id
+                return self
+            elif not(self.log_request.is_success) and repeat < self.__class__.DEFAULT_API_QUERY_RETRIES: 
+                repeat+=1
+                return self.create_log_request(repeat)
+            else: 
+                raise FlowException("Log creation request cannot be created for some reason. Please, try later.")
+    
+        else: 
+            raise FlowException("The request cannot be evaluated. Please, reduce dates range or reduce params amount.")
+        
+
+    def delete_log(self, repeat = 0):
+        time.sleep(self.__class__.DEFAULT_REQUEST_SLEEP)
+        self.deletion = CleanPendingLog(self.counterId, self.request_id, self.token, self.logger)
+        self.deletion.send_request()
+        if not(self.deletion.is_success): 
+            self.deletion = CleanProcessedLog(self.counterId, self.request_id, self.token, self.logger)
+        if self.deletion.is_success: 
+            return self 
+        elif not(self.deletion.is_success) and repeat < self.__class__.DEFAULT_API_QUERY_RETRIES: 
+            repeat+=1
+            return self.delete_log(repeat)
+        
+    
+    
+
+        
 
 
     
