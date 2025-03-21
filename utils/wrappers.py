@@ -13,7 +13,8 @@ class MainFlowWrapper:
     DOWNLOAD_API_OPERATION_DEFAULT_ENDPOINT = '/download'
     LOG_TABLE_FIELDS = ['datetime', 'response', 'endpoint', 'description']
     DEFAULT_ERROR_CODE = 500
-    DEFAULT_REQUEST_SLEEP = 1
+    DEFAULT_REQUEST_SLEEP = 0.5
+    DOWNLOAD_REQUEST_SLEEP = 2 
     DEFAULT_API_QUERY_RETRIES = 3
     BAD_STATUS_CODES = ['canceled', 'cleaned_by_user', 'cleaned_automatically_as_too_old', 'processing_failed', 'awaiting_retry']
     
@@ -69,7 +70,7 @@ class MainFlowWrapper:
         return self
     
     def check_db_tables(self): 
-        if self.global_settings.get('run_db_test'): 
+        if self.global_settings.get('run_db_table_test'): 
             #Getting api fields from config
             api_fields = self.api_settings.get('fields').split(',')
 
@@ -195,7 +196,7 @@ class MainFlowWrapper:
         
     def log_status_check(self, repeat=0):
         if self.log_request.is_success:
-            if self.frequency*repeat <= self.status_timeout: 
+            if self.frequency*(repeat+1) <= self.status_timeout: 
                 time.sleep(self.frequency)
                 self.status_request = StatusLog(self.counterId, self.request_id, self.token, self.logger)
                 self.status_request.send_request()
@@ -230,8 +231,9 @@ class MainFlowWrapper:
         if self.status_request.is_success: 
             if self.parts_amount > 0:
                 self.download_log_part = DownloadLogPart(self.counterId, self.request_id, self.token, self.logger)
+                re_download_list = []
                 for part in self.parts: 
-                    time.sleep(self.__class__.DEFAULT_REQUEST_SLEEP)
+                    time.sleep(self.__class__.DOWNLOAD_REQUEST_SLEEP+repeat)
                     self.download_log_part.send_request(part)
                     if self.download_log_part.is_success:
                         dt = datetime.now()
@@ -240,10 +242,12 @@ class MainFlowWrapper:
                         try: 
                             self.utilset.rewrite_file(self.download_log_part.response_body, full_file)
                             self.files.append(full_file)
-                            self.parts.remove(part)
                         except(OSError, IOError):
-                            continue
+                            re_download_list.append(part)
+                    else: 
+                        re_download_list.append(part)
                 
+                self.parts = re_download_list
                 description = f"Parts downloaded successfully: {self.parts_amount-len(self.parts)}. Parts not downloaded: {self.parts}."
                 endpoint = self.__class__.DOWNLOAD_API_OPERATION_DEFAULT_ENDPOINT
                 if len(self.parts) == 0 or (repeat == self.__class__.DEFAULT_API_QUERY_RETRIES and (len(self.parts)/self.parts_amount <= self.global_settings.get('data_loss_tolerance_perc',0)/100)): 
@@ -265,40 +269,10 @@ class MainFlowWrapper:
                 print("Nothing to download")
 
     def write_data_to_db(self):
+
+        settings = {"input_format_allow_errors_ratio": self.global_settings.get('bad_data_tolerance_perc', 0)/100,
+                    "input_format_allow_errors_num": self.global_settings.get('absolute_db_format_errors_tolerance', 0)
+        }
         for file in self.files:
-            pass
+            self.ch.insert_datafile(file, settings)
             
-
-
-    
-
-
-
-        
-    
-
-        
-    
-    
-
-        
-
-
-    
-
-
-                
-            
-
-        
-
-            
-
-
-
-
-
-
-                
-
-

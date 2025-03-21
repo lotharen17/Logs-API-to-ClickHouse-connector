@@ -4,7 +4,6 @@
 	"temporary_data_path": "data/", 
 	"delete_temp_data": null, 
 	"run_db_table_test":true, 
-	"run_columns_test": true,
 	"continue_on_columns_test_fail": true,
 	"run_log_table_test": true, 
 	"create_log_table_on_fail": true, 

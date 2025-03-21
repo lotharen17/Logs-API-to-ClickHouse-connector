@@ -49,8 +49,8 @@ class AbstractRequest:
         self.log = log_writer
     
     def send_request(self):
-        raw_response = requests.request(self.method, self.url, headers=self.headers, params=self.params)
-        self.parse_response(raw_response)
+        self.raw_response = requests.request(self.method, self.url, headers=self.headers, params=self.params)
+        self.parse_response(self.raw_response)
         self.deep_parse_response()
         self.is_success_logic()
         self.log_it()
@@ -226,10 +226,14 @@ class DownloadLogPart(AbstractRequest):
 
     SPECIFIC_URL = 'logrequest/%s/part/'
     VARIABLE_PART_URL = '%s/download'
+    # ENCODING = "gzip" ##Metrika's Logs API simply doesn't work properly right now. So, endure, midgets. Endure. 
+    # Those who endure then win! 
     
     def __init__(self, counterId, request_id, token, log_writer=None, params=None):
         super().__init__(counterId, token, log_writer, params)
         self.url_const = self.url%request_id
+        # self.headers['Accept-Encoding'] = self.__class__.ENCODING #Endure the inability of Metrika's team 
+        #to fix data compression properly. Unfortunately, it will stay like this till fixes. 
 
     def send_request(self, part):
         self.url = self.url_const + self.__class__.VARIABLE_PART_URL%part
