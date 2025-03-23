@@ -13,5 +13,5 @@
 	"api_status_wait_timeout_min": 30, 
 	"data_loss_tolerance_perc": 10, 
 	"bad_data_tolerance_perc": 15,
-	"absolute_db_format_errors_tolerance": 30
+	"absolute_db_format_errors_tolerance": 10
 }

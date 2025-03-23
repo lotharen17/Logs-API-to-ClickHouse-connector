@@ -10,11 +10,15 @@ import time
 class MainFlowWrapper: 
 
     SUCCESS_CODE = 200 
-    DOWNLOAD_API_OPERATION_DEFAULT_ENDPOINT = '/download'
-    LOG_TABLE_FIELDS = ['datetime', 'response', 'endpoint', 'description']
     DEFAULT_ERROR_CODE = 500
+
+    DOWNLOAD_API_OPERATION_DEFAULT_ENDPOINT = '/download'
+    LOAD_TO_DB_OPERATION_DEFAULT_ENDPOINT = '/ch_load'
+    FINISH_OPERATION_DEFAULT_ENDPOINT = '/finish'
+
+    LOG_TABLE_FIELDS = ['datetime', 'response', 'endpoint', 'description']
+
     DEFAULT_REQUEST_SLEEP = 0.5
-    DOWNLOAD_REQUEST_SLEEP = 2 
     DEFAULT_API_QUERY_RETRIES = 3
     BAD_STATUS_CODES = ['canceled', 'cleaned_by_user', 'cleaned_automatically_as_too_old', 'processing_failed', 'awaiting_retry']
     
@@ -84,21 +88,37 @@ class MainFlowWrapper:
                         if len(ch_columns) > 0:
                             ch_cols_list = [col[0] for col in ch_columns]
                             if len(api_fields) > len(ch_cols_list):
-                                self.logger.add_to_log(self.__class__.DEFAULT_ERROR_CODE, f"Database: {self.ch_credentials.get('db')}. Table: {self.ch_credentials.get('table')}", 
-                                                    f"Table {self.ch_credentials.get('table')} has less columns, than API request.")
                                 if not self.global_settings.get('continue_on_columns_test_fail'): 
+                                    self.logger.add_to_log(self.__class__.DEFAULT_ERROR_CODE, f"Database: {self.ch_credentials.get('db')}. Table: {self.ch_credentials.get('table')}", 
+                                                    f"Table {self.ch_credentials.get('table')} has less columns, than API request.")
+                                    self.logger.write_to_disk_incremental()
                                     raise DatabaseException("Sorry, you want to download more fields, then there are in your table.")
                                 else: 
+                                    self.logger.add_to_log(self.__class__.DEFAULT_ERROR_CODE, f"Database: {self.ch_credentials.get('db')}. Table: {self.ch_credentials.get('table')}", 
+                                                    f"Table {self.ch_credentials.get('table')} has less columns, than API request, but global config params allow to continue.")
+                                    self.logger.write_to_disk_incremental()
                                     print(f"Table {self.ch_credentials.get('table')} of database: {self.ch_credentials.get('db')} didn't pass colymns test (more columns in API request than in table). \
                                           \n But continue_on_columns_test_fail parameter in global_config allows us to continue.")
                             else: 
+                                self.logger.add_to_log(self.__class__.SUCCESS_CODE, f"Database: {self.ch_credentials.get('db')}. Table: {self.ch_credentials.get('table')}", 
+                                                    f"Table {self.ch_credentials.get('table')} passed shallow test successfully.")
+                                self.logger.write_to_disk_incremental()
                                 print(f"Table {self.ch_credentials.get('table')} of database: {self.ch_credentials.get('db')} passed shallow test successfully.")
                     else:
+                        self.logger.add_to_log(self.__class__.DEFAULT_ERROR_CODE, f"Database: {self.ch_credentials.get('db')}. Table: {self.ch_credentials.get('table')}", 
+                                                    f"Table doesn't exist")
+                        self.logger.write_to_disk_incremental()
                         raise DatabaseException("Table doesn't exist.")
                 else:
+                    self.logger.add_to_log(self.__class__.DEFAULT_ERROR_CODE, f"Database: {self.ch_credentials.get('db')}. Table: {self.ch_credentials.get('table')}", 
+                                                    f"Database doesn't exist")
+                    self.logger.write_to_disk_incremental()
                     raise DatabaseException("Database doesn't exist.")
             else: 
-                raise DatabaseException("Query wasn't perform. Probably, not enough rights to perform SELECT query.")
+                self.logger.add_to_log(self.__class__.DEFAULT_ERROR_CODE, f"Database: {self.ch_credentials.get('db')}. Table: {self.ch_credentials.get('table')}", 
+                                                    f"Query wasn't performed properly.")
+                self.logger.write_to_disk_incremental()
+                raise DatabaseException("Query wasn't performed. Probably, not enough rights to perform SELECT query.")
 
         if self.global_settings.get('run_log_table_test') and self.ch_credentials.get('logTable'):
             #Check if log table exists and if columns of log table are those should be. 
@@ -109,12 +129,21 @@ class MainFlowWrapper:
                 if (len(ch_log_table) == 0 or ch_log_columns != self.__class__.LOG_TABLE_FIELDS) and self.global_settings.get('create_log_table_on_fail'):
                     self.is_log_table = self.ch.create_table(self.queries['log_table_create'], self.ch_credentials.get('logTable'))
                     if not(self.is_log_table or self.global_settings.get('continue_on_log_table_creation_fail')): 
+                        self.logger.add_to_log(self.__class__.DEFAULT_ERROR_CODE, f"Database: {self.ch_credentials.get('db')}. Table: {self.ch_credentials.get('logTable')}", 
+                                                f"Table doesn't exist and couldn't be created.")
+                        self.logger.write_to_disk_incremental()
                         raise DatabaseException(f"Sorry. Log Table didn't pass a check and a new one called {self.ch_credentials.get('logTable')} couldn't be created.")
                 elif len(ch_log_table) > 0 and ch_log_columns == self.__class__.LOG_TABLE_FIELDS: 
                     self.is_log_table = True
+                    self.logger.add_to_log(self.__class__.SUCCESS_CODE, f"Database: {self.ch_credentials.get('db')}. Table: {self.ch_credentials.get('logTable')}", 
+                                            f"Table {self.ch_credentials.get('logTable')} successfully passed shallow check.")
+                    self.logger.write_to_disk_incremental()
                     print(f"Log table {self.ch_credentials.get('logTable')} of database {self.ch_credentials.get('db')} successfully passed shallow check.")
             else:
                 print(f"Query of {self.ch_credentials.get('logTable')} wasn't successfull")
+                self.logger.add_to_log(self.__class__.DEFAULT_ERROR_CODE, f"Database: {self.ch_credentials.get('db')}. Table: {self.ch_credentials.get('logTable')}", 
+                                            f"Table {self.ch_credentials.get('logTable')} or its columns weren't queried. Probably, not enough rights or other query issue")
+                self.logger.write_to_disk_incremental()
                 if not(self.global_settings.get('continue_on_log_table_creation_fail')): 
                     raise DatabaseException(f"Table {self.ch_credentials.get('logTable')} or its columns weren't queried. Probably, not enough rights or other query issue")
                 
@@ -145,13 +174,15 @@ class MainFlowWrapper:
                     print(f"Deleted {requests_deleted} requests in queue.")
                     self.log_evaluation.send_request()
                     if not(self.log_evaluation.is_success): 
+                        self.write_log_to_db()
                         raise FlowException("The queue was cleared, but your request cannot be performed anyway.\n Please, make date range smaller or reduce params amount.")
                     else: 
-                        print(f"Evaluation results: {self.log_evaluation.is_success}")
+                        print(f"Evaluation success: {self.log_evaluation.is_success}")
                 else: 
+                    self.write_log_to_db()
                     raise FlowException(f"The queue is empty, but your request cannot be performed anyway.\n Please, make date range smaller or reduce params amount.")
         else: 
-            print(f"Evaluation results: {self.log_evaluation.is_success}")
+            print(f"Evaluation sucess: {self.log_evaluation.is_success}")
         return self
     
     def create_log_request(self, repeat = 0): 
@@ -163,12 +194,14 @@ class MainFlowWrapper:
                 self.request_id = self.log_request.request_id
                 print(f"Log request with id: {self.request_id} was successfully created.")
                 return self
-            elif not(self.log_request.is_success) and repeat < self.__class__.DEFAULT_API_QUERY_RETRIES: 
+            elif not(self.log_request.is_success) and repeat < (self.__class__.DEFAULT_API_QUERY_RETRIES - 1): 
                 repeat+=1
                 return self.create_log_request(repeat)
             else: 
+                self.write_log_to_db()
                 raise FlowException("Log creation request cannot be created for some reason. Please, try later.")
         else: 
+            self.write_log_to_db()
             raise FlowException("The request wasn't evaluated or cannot be evaluated. Please, check sequence of methods calls, reduce dates range or reduce params amount.")
         
     def delete_log(self, repeat = 0):
@@ -188,7 +221,7 @@ class MainFlowWrapper:
                 print(f"Deletion of request {self.request_id} was {self.deletion.is_success}")
                 del self.deletion
                 return self 
-            elif not(self.deletion.is_success) and repeat < self.__class__.DEFAULT_API_QUERY_RETRIES: 
+            elif not(self.deletion.is_success) and repeat < (self.__class__.DEFAULT_API_QUERY_RETRIES - 1): 
                 repeat+=1
                 return self.delete_log(repeat)
             else: 
@@ -205,7 +238,7 @@ class MainFlowWrapper:
                 if self.status_request.is_success: 
                     self.parts = self.status_request.parts
                     self.parts_amount = self.status_request.parts_amount
-                    print(f"Status check of request {self.request_id} got posititve results. Status: {self.status_request.status}. Time spent on waiting: {(repeat+1)*self.frequency} secs.")
+                    print(f"Status check of request {self.request_id} got posititve results. Status: {self.status_request.status}. Parts to download: {self.parts_amount}. Time spent on waiting: {(repeat+1)*self.frequency} secs.")
                     return self
                 elif self.status_request.response_code == self.__class__.SUCCESS_CODE: 
                     if self.status_request.status in self.__class__.BAD_STATUS_CODES:
@@ -215,16 +248,21 @@ class MainFlowWrapper:
                         repeat+=1 
                         return self.log_status_check(repeat)
                 elif self.status_request.response_code is not None:
-                    if repeat > 3: 
+                    if repeat > self.__class__.DEFAULT_API_QUERY_RETRIES:
+                        self.write_log_to_db()
+                        self.delete_log()
                         raise FlowException(f"Endpoint of status query {self.status_request.url} is unreachable.") #Well, just not to wait half an hour just for incorrect requests.
                     repeat+=1
                     return self.log_status_check(repeat)
                 else: 
+                    self.write_log_to_db()
+                    self.delete_log()
                     raise FlowException(f"Endpoint of status query {self.status_request.url} is unreachable.")
             else: 
+                self.write_log_to_db()
                 raise FlowException(f"Log wasn't cooked for timeout time: {self.status_timeout/60} mins.")
-            
         else: 
+            self.write_log_to_db()
             raise FlowException("The request wasn't created. Please, check sequence of methods calls.")
         
     def log_downloader(self, repeat=0):
@@ -233,7 +271,7 @@ class MainFlowWrapper:
                 self.download_log_part = DownloadLogPart(self.counterId, self.request_id, self.token, self.logger)
                 re_download_list = []
                 for part in self.parts: 
-                    time.sleep(self.__class__.DOWNLOAD_REQUEST_SLEEP+repeat)
+                    time.sleep(self.__class__.DEFAULT_REQUEST_SLEEP+repeat)
                     self.download_log_part.send_request(part)
                     if self.download_log_part.is_success:
                         dt = datetime.now()
@@ -250,29 +288,74 @@ class MainFlowWrapper:
                 self.parts = re_download_list
                 description = f"Parts downloaded successfully: {self.parts_amount-len(self.parts)}. Parts not downloaded: {self.parts}."
                 endpoint = self.__class__.DOWNLOAD_API_OPERATION_DEFAULT_ENDPOINT
-                if len(self.parts) == 0 or (repeat == self.__class__.DEFAULT_API_QUERY_RETRIES and (len(self.parts)/self.parts_amount <= self.global_settings.get('data_loss_tolerance_perc',0)/100)): 
+                if len(self.parts) == 0 or (repeat == (self.__class__.DEFAULT_API_QUERY_RETRIES - 1) and (len(self.parts)/self.parts_amount <= self.global_settings.get('data_loss_tolerance_perc',0)/100)): 
                     self.logger.add_to_log(response=self.__class__.SUCCESS_CODE, endpoint=endpoint, description=description).write_to_disk_incremental()
                     print(description)
+                    self.delete_log()
                     return self
-                elif repeat < self.__class__.DEFAULT_API_QUERY_RETRIES: 
+                elif repeat < (self.__class__.DEFAULT_API_QUERY_RETRIES - 1): 
                     repeat += 1
                     return self.log_downloader(repeat)
                 else:
                     self.logger.add_to_log(response=self.__class__.DEFAULT_ERROR_CODE, endpoint=endpoint, description=description).write_to_disk_incremental()
-                    for file in self.files:
-                        self.utilset.delete_file(file)
-                    raise  FlowException(f"Error of downloading data. Downloaded: {self.parts_amount - len(self.parts)} files.\n \
+                    self.write_log_to_db()
+                    self.delete_files([])
+                    raise  FlowException(f"Error of downloading data. Request ID: {self.request_id}. Downloaded: {self.parts_amount - len(self.parts)} files.\n \
                                          That's {round(len(self.parts)/self.parts_amount*100, 2)} percent of total data.\n \
                                          Allowed tolerance is: {self.global_settings.get('data_loss_tolerance_perc',0)} percent.\n \
                                          All files were deleted. Re-run script instead")
             else: 
                 print("Nothing to download")
 
-    def write_data_to_db(self):
-
+    def write_data_to_db(self, repeat=0, file_list = None):
         settings = {"input_format_allow_errors_ratio": self.global_settings.get('bad_data_tolerance_perc', 0)/100,
                     "input_format_allow_errors_num": self.global_settings.get('absolute_db_format_errors_tolerance', 0)
         }
-        for file in self.files:
-            self.ch.insert_datafile(file, settings)
-            
+        failed_loads = []
+        if file_list is None: 
+            file_list = self.files
+        
+        for file in file_list:
+                result = self.ch.insert_datafile(file, settings)
+                if not result: 
+                    failed_loads.append(file)
+
+        description = f"Parts loaded into db successfully: {len(self.files) - len(failed_loads)}. Files not downloaded: {failed_loads}."
+        endpoint = self.__class__.LOAD_TO_DB_OPERATION_DEFAULT_ENDPOINT
+        if len(failed_loads) == 0: 
+            self.logger.add_to_log(response=self.__class__.SUCCESS_CODE, endpoint=endpoint, description=description).write_to_disk_incremental()
+            self.delete_files(failed_loads)
+            print(f"All files were successfully written to the db table:{self.ch_credentials.get('db')}.{self.ch_credentials.get('table')}.")
+            return self
+        elif len(failed_loads) > 0 and repeat < (self.__class__.DEFAULT_API_QUERY_RETRIES-1): 
+            repeat+= 1
+            self.write_data_to_db(repeat, file_list = failed_loads)
+        else: 
+            self.logger.add_to_log(response=self.__class__.DEFAULT_ERROR_CODE, endpoint=endpoint, description=description).write_to_disk_incremental()
+            self.write_log_to_db()
+            self.delete_files(failed_loads)
+            raise FlowException(f"Not all Logs API downloaded files were properly written to {self.ch_credentials.get('db')}.{self.ch_credentials.get('table')}. \n \
+                                Please, re-upload leftover files from {self.data_path}. Rest of files were successfully uploaded.")
+        
+    def delete_files(self, exclusion_list): 
+        for file in self.files: 
+            if file not in exclusion_list: 
+                self.utilset.delete_file(file)
+        return self
+    
+
+    def write_log_to_db(self): 
+        if self.ch_credentials.get('logTable'):
+            rowed_log = self.logger.log.split('\n')
+            rowed_log = [col.split('\t') for col in rowed_log]
+            result = self.ch.insert_data(self.ch.logTable, rowed_log)
+            if result: 
+                print(f"Log was succesfully written to table: {self.ch_credentials.get('db')}.{self.ch_credentials.get('logTable')}.")
+            else: 
+                raise FlowException(f"Log wasn't written to {self.ch_credentials.get('db')}.{self.ch_credentials.get('logTable')} for some reason.")
+        return self
+    
+    def close_and_finish(self):
+        self.write_log_to_db()
+        self.ch.close_connections()
+        print("Script finished successfully.") 

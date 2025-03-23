@@ -1,8 +1,5 @@
 import clickhouse_connect
-import clickhouse_connect.driver
-import clickhouse_connect.driver.tools
 import sshtunnel
-
 
 class ClickHouseConnector:
     """Class to create ClickHouse connection and (optionally) ssh tunnel. 
@@ -39,7 +36,6 @@ class ClickHouseConnector:
 
     FORMAT = "TSVWithNames" #Logs API format of response. 
 
-
     BadCode = 500
     SuccessCode = 200
     CloseCode = 205
@@ -63,7 +59,6 @@ class ClickHouseConnector:
 
     ChInsertBadDescription = "Insert to ClickHouse wasn't performed. Maybe there are not enough rights, or bad/no data"
     ChInsertSuccessDescription = "Insert to ClickHouse was performed successfully."
-
 
     def __init__(self, logger, login, password, host, port, db, table, logTable=None, ssh=None):
         self.logger = logger
@@ -156,7 +151,6 @@ class ClickHouseConnector:
         
         Arguments: 
             self - uses global class' variables to establish connection
-
         """
         classmethod = f"Class: {self.__class__.__name__}. Method: {self._establish_ch_connection.__name__}"
         client = None
@@ -227,102 +221,19 @@ class ClickHouseConnector:
         return result
     
     def insert_datafile(self, file, settings=None): 
-        #To do: to think about how to make this less idiotic. 
-        clickhouse_connect.driver.tools.insert_file(self.ch_client,self.table, file, settings=settings, database = self.db, fmt = ClickHouseConnector.FORMAT)
+        result = False
+        try: 
+            clickhouse_connect.driver.tools.insert_file(self.ch_client,self.table, file, settings=settings, database = self.db, fmt = ClickHouseConnector.FORMAT)
+            result = True
+        finally: 
+            return result
+
+    def insert_data(self, table, data): 
+        result = False 
+        try: 
+            self.ch_client.insert(table, data, database=self.db)
+            result = True
+        finally: 
+            return result 
         
-
-
-
-
     
-
-    
-#TO DO: to add gzip compression writing, not reading
-
-    
-        
-
-
-    
-
-
-        # self.tunnel.start()
-
-
-
-
-
-
-# server = SSHTunnelForwarder(
-#     'alfa.8iq.dev',
-#     ssh_username="pahaz",
-#     ssh_password="secret",
-#     remote_bind_address=('127.0.0.1', 8080)
-# )
-
-# server.start()
-
-# print(server.local_bind_port)  # show assigned local port
-# # work with `SECRET SERVICE` through `server.local_bind_port`.
-
-# server.stop()
-
-# def clickhouse_connector(host='localhost', tcp_port = 666, username = 'default', password='default'):
-#     """Function to establish a connection with clickhouse server."""
-#     #SSH connection creation 
-#     def ssh_connection_creation(host, tcp_port):
-#         """Function, that reads global varibale ssh_path and creates. Needs ssh_path global variable to run proprely."""
-#         if 'ssh_path' in globals(): 
-#             try:
-#                 with open(ssh_path, "r") as s:
-#                     ssh_json = s.read()
-#                     ssh_json = json.loads(ssh_json)
-#                 server = sshtunnel.SSHTunnelForwarder(
-#                     (ssh_json['host'], ssh_json['port']),
-#                     ssh_username = ssh_json['login'],
-#                     ssh_password = ssh_json['password'],
-#                     #ssh_private_key = "id_ed25519",
-#                     #ssh_host_key = 'vanoing',
-#                     remote_bind_address = ('localhost', ssh_json['remote_port_bind']),
-#                     ssh_private_key_password = ssh_json['password'],
-#                     local_bind_address=(host, tcp_port), 
-#                     host_pkey_directories=[], 
-#                     set_keepalive=2.
-#                     )
-#                 server.start()
-#                 return server
-#             except: 
-#                 logger(response ='\t404', endpoint=f'\t{ssh_path}', description = '\tFile with ssh config not fount\n', path=log_path)
-#                 return None
-#         else: 
-#             return None 
-#     ssh_connection = ssh_connection_creation(host, tcp_port)
-# #     ssh_connection.stop()
-# #    ssh_connection.start() 
-#     try: 
-#         client = clickhouse_connect.get_client(host=host, port=tcp_port, username=username, password=password)
-#         logger(response ='\t200', endpoint=f'\t{host}:{tcp_port}', description = '\tSuccessfull connection to ClickHouse\n', path=log_path)
-#     except: 
-#         re_run=1 
-#         logger(response ='\t404', endpoint=f'\t{host}:{tcp_port}', description = '\tConnection to clickhouse failed miserably.\n', path=log_path)
-#         client = None 
-#     return client
-
-
-
-
-    # def establish_connection(self): 
-    #     """Method to initialize tunnel"""
-    #     try: 
-    #         tunnel = sshtunnel.SSHTunnelForwarder(
-    #             self.remote_host, 
-    #             self.remote_tcp_port, 
-    #             ssh_username = self.username,
-    #             ssh_password = self.password, 
-    #             remote_bind_address = (self.remote_host_bind, self.remote_tcp_port_bind), 
-    #             local_bind_address = (self.local_host_bind, self.local_tcp_port_bind),
-    #             host_pkey_directories=[]
-    #         )
-    #     except BaseSSHTunnelForwarderError:
-    #         print()
-    #     return tunnel
