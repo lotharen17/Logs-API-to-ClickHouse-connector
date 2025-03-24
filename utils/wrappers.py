@@ -210,22 +210,25 @@ class MainFlowWrapper:
             del self.log_request
             del self.status_request
             del self.download_log_part
-        finally: 
-            time.sleep(self.__class__.DEFAULT_REQUEST_SLEEP)
-            self.deletion = CleanPendingLog(self.counterId, self.request_id, self.token, self.logger)
-            self.deletion.send_request()
-            if not(self.deletion.is_success): 
-                self.deletion = CleanProcessedLog(self.counterId, self.request_id, self.token, self.logger)
+        finally:
+            if self.global_settings.get('clear_created_logs_request'):
+                time.sleep(self.__class__.DEFAULT_REQUEST_SLEEP)
+                self.deletion = CleanPendingLog(self.counterId, self.request_id, self.token, self.logger)
                 self.deletion.send_request()
-            if self.deletion.is_success:
-                print(f"Deletion of request {self.request_id} was {self.deletion.is_success}")
-                del self.deletion
-                return self 
-            elif not(self.deletion.is_success) and repeat < (self.__class__.DEFAULT_API_QUERY_RETRIES - 1): 
-                repeat+=1
-                return self.delete_log(repeat)
-            else: 
-                print(f"Deletion of request {self.request_id} wasn't performed")
+                if not(self.deletion.is_success): 
+                    self.deletion = CleanProcessedLog(self.counterId, self.request_id, self.token, self.logger)
+                    self.deletion.send_request()
+                if self.deletion.is_success:
+                    print(f"Deletion of request {self.request_id} was {self.deletion.is_success}")
+                    del self.deletion
+                    return self 
+                elif not(self.deletion.is_success) and repeat < (self.__class__.DEFAULT_API_QUERY_RETRIES - 1): 
+                    repeat+=1
+                    return self.delete_log(repeat)
+                else: 
+                    print(f"Deletion of request {self.request_id} wasn't performed for unexpected reason.")
+            else:
+                print(f"Deletion of {self.request_id} wasn't performed according to global config.")
         
     def log_status_check(self, repeat=0):
         if self.log_request.is_success:
@@ -260,6 +263,7 @@ class MainFlowWrapper:
                     raise FlowException(f"Endpoint of status query {self.status_request.url} is unreachable.")
             else: 
                 self.write_log_to_db()
+                self.delete_log()
                 raise FlowException(f"Log wasn't cooked for timeout time: {self.status_timeout/60} mins.")
         else: 
             self.write_log_to_db()
@@ -299,7 +303,8 @@ class MainFlowWrapper:
                 else:
                     self.logger.add_to_log(response=self.__class__.DEFAULT_ERROR_CODE, endpoint=endpoint, description=description).write_to_disk_incremental()
                     self.write_log_to_db()
-                    self.delete_files([])
+                    self.delete_files()
+                    self.delete_log()
                     raise  FlowException(f"Error of downloading data. Request ID: {self.request_id}. Downloaded: {self.parts_amount - len(self.parts)} files.\n \
                                          That's {round(len(self.parts)/self.parts_amount*100, 2)} percent of total data.\n \
                                          Allowed tolerance is: {self.global_settings.get('data_loss_tolerance_perc',0)} percent.\n \
@@ -309,7 +314,8 @@ class MainFlowWrapper:
 
     def write_data_to_db(self, repeat=0, file_list = None):
         settings = {"input_format_allow_errors_ratio": self.global_settings.get('bad_data_tolerance_perc', 0)/100,
-                    "input_format_allow_errors_num": self.global_settings.get('absolute_db_format_errors_tolerance', 0)
+                    "input_format_allow_errors_num": self.global_settings.get('absolute_db_format_errors_tolerance', 0), 
+                    "input_format_with_names_use_header": self.global_settings.get('api_strict_db_table_cols_names')
         }
         failed_loads = []
         if file_list is None: 
@@ -320,7 +326,7 @@ class MainFlowWrapper:
                 if not result: 
                     failed_loads.append(file)
 
-        description = f"Parts loaded into db successfully: {len(self.files) - len(failed_loads)}. Files not downloaded: {failed_loads}."
+        description = f"Parts loaded into db successfully: {len(self.files) - len(failed_loads)}. Files not loaded: {failed_loads}."
         endpoint = self.__class__.LOAD_TO_DB_OPERATION_DEFAULT_ENDPOINT
         if len(failed_loads) == 0: 
             self.logger.add_to_log(response=self.__class__.SUCCESS_CODE, endpoint=endpoint, description=description).write_to_disk_incremental()
@@ -334,20 +340,32 @@ class MainFlowWrapper:
             self.logger.add_to_log(response=self.__class__.DEFAULT_ERROR_CODE, endpoint=endpoint, description=description).write_to_disk_incremental()
             self.write_log_to_db()
             self.delete_files(failed_loads)
-            raise FlowException(f"Not all Logs API downloaded files were properly written to {self.ch_credentials.get('db')}.{self.ch_credentials.get('table')}. \n \
+            if not self.global_settings.get('delete_not_uploaded_to_db_temp_data'):
+                raise FlowException(f"Not all Logs API downloaded files were properly written to {self.ch_credentials.get('db')}.{self.ch_credentials.get('table')}.\n \
                                 Please, re-upload leftover files from {self.data_path}. Rest of files were successfully uploaded.")
+            else: 
+                raise FlowException(f"Not all Logs API downloaded files were properly written to {self.ch_credentials.get('db')}.{self.ch_credentials.get('table')}.\n \
+                                Please, re-run run the script and perform FINAL deduplication in ClickHouse.")
         
-    def delete_files(self, exclusion_list): 
-        for file in self.files: 
-            if file not in exclusion_list: 
-                self.utilset.delete_file(file)
+    def delete_files(self, exclusion_list=None): 
+        if self.global_settings.get('delete_temp_data'): 
+            if exclusion_list is None or self.global_settings.get('delete_not_uploaded_to_db_temp_data'): 
+                exclusion_list = []
+            deleted_files = 0
+            for file in self.files: 
+                if file not in exclusion_list: 
+                    self.utilset.delete_file(file)
+                    deleted_files+= 1
+            print(f"Deleted {deleted_files} logs api datafiles. Left to re-upload manually {len(self.files) - deleted_files} files.")
         return self
     
-
     def write_log_to_db(self): 
+        format = "%Y-%m-%d %H:%M:%S"
         if self.ch_credentials.get('logTable'):
-            rowed_log = self.logger.log.split('\n')
+            rowed_log = self.logger.log.split('\n')[:-1]
             rowed_log = [col.split('\t') for col in rowed_log]
+            for row in rowed_log: 
+                row[0] = datetime.strptime(row[0], format)
             result = self.ch.insert_data(self.ch.logTable, rowed_log)
             if result: 
                 print(f"Log was succesfully written to table: {self.ch_credentials.get('db')}.{self.ch_credentials.get('logTable')}.")
@@ -359,3 +377,4 @@ class MainFlowWrapper:
         self.write_log_to_db()
         self.ch.close_connections()
         print("Script finished successfully.") 
+        return None 

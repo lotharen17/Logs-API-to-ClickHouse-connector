@@ -43,4 +43,3 @@ begin_date = begin_date.strftime("%Y-%m-%d")
 # end_date = '2024-11-19'
 
 print(begin_date, '-',  end_date)
-

@@ -1,4 +1,6 @@
 import clickhouse_connect
+import clickhouse_connect.driver
+import clickhouse_connect.driver.tools
 import sshtunnel
 
 class ClickHouseConnector:
@@ -70,7 +72,7 @@ class ClickHouseConnector:
         self.table = table 
         self.logTable = logTable
         self.ssh = ssh 
-        if self.ssh is not None: 
+        if self.ssh is not None and isinstance(self.ssh, dict) and self.ssh != {}:
             self.tunnel = self._establish_ssh_tunnel()
         self.ch_client = self._establish_ch_connection()
                 
@@ -185,11 +187,12 @@ class ClickHouseConnector:
             print("ClickHouse connection closed.")
             self.logger.add_to_log(response=ClickHouseConnector.CloseCode, endpoint=ClickHouseConnector.ChEndpoint,
                                     description=ClickHouseConnector.ChCloseDescription).write_to_disk_incremental(classmethod)
-        if self.tunnel is not None: 
-            self.tunnel.close()
-            print("SSH connection closed.")
-            self.logger.add_to_log(response =ClickHouseConnector.CloseCode, endpoint=ClickHouseConnector.SSHEndpoint, 
-                                       description = ClickHouseConnector.SSHCloseDescription).write_to_disk_incremental(classmethod)
+        if hasattr(self, 'tunnel'):
+            if self.tunnel is not None: 
+                self.tunnel.close()
+                print("SSH connection closed.")
+                self.logger.add_to_log(response =ClickHouseConnector.CloseCode, endpoint=ClickHouseConnector.SSHEndpoint, 
+                                        description = ClickHouseConnector.SSHCloseDescription).write_to_disk_incremental(classmethod)
 
     def query_data(self, query, **kwargs):
         classmethod = f"Class: {self.__class__.__name__}. Method: {self.query_data.__name__}"
@@ -235,5 +238,3 @@ class ClickHouseConnector:
             result = True
         finally: 
             return result 
-        
-    

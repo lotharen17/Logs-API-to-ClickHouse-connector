@@ -79,11 +79,10 @@ class Logger:
     def write_to_disk_last_run(self): 
         """Method to write last run's log to disk
         """
-        if self._path_last is not None: 
+        if self._path_last is not None and self._path_last and isinstance(self._path_last, str): 
             try: 
-                self.utils.write_to_file(self._log, self._path_last)
+                self.utils.rewrite_file(self._log, self._path_last)
                 print(f"Full log of this run has been written.")
             except(OSError, IOError): 
                 print(f"You probably don't have an access to {self._path_last} or to create this file even in working directory.")
         return self
-

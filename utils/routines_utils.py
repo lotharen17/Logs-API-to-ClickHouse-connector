@@ -87,7 +87,6 @@ class UtilsSet:
             print(f"File {path} doesn't exist.")
         return self 
     
-
     def read_file(self, path): 
         with open(path, "r") as f: 
             content = f.read()
@@ -103,14 +102,3 @@ class UtilsSet:
         content = self.read_file(path)
         content = json.loads(content)
         return content
-    
-
-
-
-# def nested_writer(): 
-#             """Function which takes atomic part of log (one line) from global environment (self) and writes them to logfile."""
-#             with open(self._path, "a", encoding="utf-8", newline='\n') as f:
-#                 f.write(self._log_line)
-#                 print(f"Logline of {classMethod} job was successfully written to disk.")
-#                 self._log_line = ''
-        
