@@ -1,45 +1,36 @@
-import sshtunnel
-import clickhouse_connect
-import requests
-import gzip
-import json
-from datetime import datetime
-from datetime import timedelta
-from clickhouse_connect.driver.tools import insert_file
-import time
+from utils.routines_utils import UtilsSet
+from utils.api_methods import *
+from utils.wrappers import MainFlowWrapper
 
 
-re_run = 0 #variable for future purposes: will be returned to the system, so the code can be re-run
-default_sleep_time = 120 #seconds to wait before requesting prepared data 
+#Creating utilitites set instance for script run
+utilities = UtilsSet()
 
-api_file_path = "metrika_data.tsv"
-log_file_path = 'logs/logs.tsv'
+#Reading credentials and parameters from configs. 
+ch_credentials = utilities.read_json_file("configs/ch_credentials.json")
+api_settings = utilities.read_json_file("configs/api_credentials.json")
+global_settings = utilities.read_json_file("configs/global_config.json")
 
+#Reading queries and creating dictionary of queries to perform during program execution. 
+queries = {}
+queries['db_query'] = utilities.read_sql_file("queries/query_database.sql")
+queries['table_query'] = utilities.read_sql_file("queries/query_table.sql")
+queries['columns_query'] = utilities.read_sql_file("queries/query_columns.sql")
+queries['log_table_query'] = utilities.read_sql_file("queries/query_log_table.sql")
+queries['log_table_query_columns'] = utilities.read_sql_file("queries/query_log_table_columns.sql")
+queries['log_table_create'] = utilities.read_sql_file("queries/create_log_table.sql")%ch_credentials
 
-#Loading file with with clickhouse credentials:
-ch_credentials = json.loads(file_reader('ch_credentials.json'))
-
-#Auth data
-auth_dict= json.loads(file_reader("token_counter.txt"))
-token = auth_dict['token']
-counter = auth_dict['counter']
-
-#Authorization: https://yandex.ru/dev/metrika/ru/intro/authorization
-headers = { 'Authorization': f'OAuth {token}'} ##authorization header
-
-#Setting source of data from Logs API and fields
-#Source: https://yandex.ru/dev/metrika/ru/logs/openapi/createLogRequest
-fields_n_source = json.loads(file_reader('source_fields.txt'))
-fields = fields_n_source['fields']
-source = fields_n_source['source']
-
-#Setting last and first dates for data dates range. 
-end_date = datetime.date(datetime.now()) - timedelta(days = 1)
-begin_date = end_date #- timedelta(days = 1)
-
-end_date = end_date.strftime("%Y-%m-%d")
-begin_date = begin_date.strftime("%Y-%m-%d")
-# begin_date = '2024-11-17'
-# end_date = '2024-11-19'
-
-print(begin_date, '-',  end_date)
+#Creating main_flow execution instance. It will establish CH(optionaly - with ssh tunnel) connection and perform db and tables checks if proper globa_config parameters are set. 
+main_flow = MainFlowWrapper(ch_credentials, api_settings, global_settings, queries, utilities)
+#Let's perform log evaluation request. 
+main_flow.check_log_evaluation()
+#Let's perform Logs API log creation request. 
+main_flow.create_log_request()
+#Let's perform log status recursional checks. 
+main_flow.log_status_check()
+#Let's download the Logs API log. 
+main_flow.log_downloader()
+#Let's load downloaded data to our CH instance. 
+main_flow.write_data_to_db()
+#Let's properly finish the script with log records. 
+main_flow.close_and_finish()

@@ -44,6 +44,8 @@ class ClickHouseConnector:
 
     ChEndpoint = 'CH'
     SSHEndpoint = 'SSH'
+    ChQueryEndpoint = 'CH/query%s'
+    ChCreateEndpoint = 'CH/create%s'
 
     SSHBadDescription = "SSH connection not established. Check credentials and if ports are open."
     SSHSuccessDescription = "SSH connection successfully established."
@@ -53,8 +55,8 @@ class ClickHouseConnector:
     ChSuccessDescription = "Connection to ClickHouse successfully established."
     ChCloseDescription = "Connection to Clickhouse was successfully closed."
 
-    ChQueryBadDescription = "Query wasn't performed. Maybe user you logged with doesn't have permissions for that"
-    ChQuerySuccessDescription = "Query was performed successfully"
+    ChQueryBadDescription = "Query wasn't performed. Maybe user you logged with doesn't have permissions for that. Query: %s"
+    ChQuerySuccessDescription = "Query was performed successfully. Query: %s"
 
     ChCreateTableBadDescription = "Table %s wasn't created. Maybe user you logged with doesn't have permission for that"
     ChCreateTableSuccessDescription = "Table %s was successfully created."
@@ -72,6 +74,8 @@ class ClickHouseConnector:
         self.table = table 
         self.logTable = logTable
         self.ssh = ssh 
+        self.queries = 0
+        self.creations = 0
         if self.ssh is not None and isinstance(self.ssh, dict) and self.ssh != {}:
             self.tunnel = self._establish_ssh_tunnel()
         self.ch_client = self._establish_ch_connection()
@@ -195,31 +199,33 @@ class ClickHouseConnector:
                                         description = ClickHouseConnector.SSHCloseDescription).write_to_disk_incremental(classmethod)
 
     def query_data(self, query, **kwargs):
+        self.queries +=1
         classmethod = f"Class: {self.__class__.__name__}. Method: {self.query_data.__name__}"
         result = None
         try: 
             result = self.ch_client.query(query, **kwargs).result_rows
-            self.logger.add_to_log(response=ClickHouseConnector.SuccessCode, endpoint=ClickHouseConnector.ChEndpoint,
-                                    description=ClickHouseConnector.ChQuerySuccessDescription).write_to_disk_incremental(classmethod)
+            self.logger.add_to_log(response=ClickHouseConnector.SuccessCode, endpoint=ClickHouseConnector.ChQueryEndpoint%self.queries,
+                                    description=ClickHouseConnector.ChQuerySuccessDescription%query).write_to_disk_incremental(classmethod)
         except: 
             print("Query wasn't performed.")
-            self.logger.add_to_log(response=ClickHouseConnector.BadCode, endpoint=ClickHouseConnector.ChEndpoint,
-                                    description=ClickHouseConnector.ChQueryBadDescription).write_to_disk_incremental(classmethod)
+            self.logger.add_to_log(response=ClickHouseConnector.BadCode, endpoint=ClickHouseConnector.ChQueryEndpoint%self.queries,
+                                    description=ClickHouseConnector.ChQueryBadDescription%query).write_to_disk_incremental(classmethod)
         return result
     
     def create_table(self, query, table, **kwargs):
+        self.creations+=1
         classmethod = f"Class: {self.__class__.__name__}. Method: {self.create_table.__name__}"
         table_name = table
         result = False
         try: 
             self.ch_client.command(query, **kwargs).as_query_result()
             result = True
-            self.logger.add_to_log(response=ClickHouseConnector.SuccessCode, endpoint=ClickHouseConnector.ChEndpoint,
+            self.logger.add_to_log(response=ClickHouseConnector.SuccessCode, endpoint=ClickHouseConnector.ChCreateEndpoint%self.creations,
                                     description=ClickHouseConnector.ChCreateTableSuccessDescription%table_name).write_to_disk_incremental(classmethod)
             print(f"Table {table_name} was successfully created.")
         except: 
             print(f"Table {table_name} wasn't created")
-            self.logger.add_to_log(response=ClickHouseConnector.BadCode, endpoint=ClickHouseConnector.ChEndpoint,
+            self.logger.add_to_log(response=ClickHouseConnector.BadCode, endpoint=ClickHouseConnector.ChCreateEndpoint%self.creations,
                                     description=ClickHouseConnector.ChCreateTableBadDescription%table_name).write_to_disk_incremental(classmethod)
         return result
     

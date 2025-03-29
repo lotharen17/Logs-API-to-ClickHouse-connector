@@ -23,7 +23,52 @@ class MainFlowWrapper:
         DOWNLOAD_API_OPERATION_DEFAULT_ENDPOINT - str, just to name endpoint for downloading operation in log. 
         LOAD_TO_DB_OPERATION_DEFAULT_ENDPOINT - str, just to name endpoint for loading data to database operation. 
         FINISH_OPERATION_DEFAULT_ENDPOINT - str, just to name endpoint for program finish.  
+        LOG_TABLE_FIELDS - list of strings. List of strings of the log table headers, to create a log table. 
+        DEFAULT_REQUEST_SLEEP - float, value to separate requests in time to meet quota of Logs API: https://yandex.com/dev/metrika/en/intro/quotas.
+        DEFAULT_API_QUERY_RETRIES - int, value to re-try API queries and other operations to perform in case of not-successfull results. Log evaluation is exclusion and will be performed only once. 
+        BAD_STATUS_CODES - list of str, statuses mean logs api data cannot be extracted. Source: https://yandex.com/dev/metrika/en/logs/openapi/getLogRequest#logrequest
+
+    Properties: 
+        ch_credentials - :dict with clickhouse credentials from ch_credentials.json config file. 
+        api_settings - :dict with Logs API settings and auth credentials to properly access Logs API methods from file api_credentials.json
+        global_settings - :dict with global settings from global_config.json file. 
+        utilset  - :inst of class UtilsSet. Associated utilset for the MainFlowWrapper class' instance. Aggregational alias of globally existing utilset instance. 
+        logger - :inst of class Logger. Logger for script flow. Example of composition, as it's created as a part of MainFlowWrapper class' instance. 
+        data_path - :str, parsed string of directory to store downloaded datafiles. By default - root directory of the script (where main.py is located). 
+        frequency - :int, seconds to check status of created log praparation process. Parsed from frequency_api_status_check_sec parameter of global_config.json. 
+        status_timeout - :int, minutes to wait until timeout will be declared exceeded and script will be finished with an error. Taken from api_status_wait_timeout_min of global_config.json.
+        queries - :dict. Dictionary with queries to perform database and tables checks. 
+        counterId - :int. Id of counter of Yandex.Metrika. Parsed from api_settings dict. 
+        token - :str. Parsed from api_settings dict. Authentication token.
+        params - :dict. Params dictionary, copy of api_settings without token and counter. 
+        is_log_table - :bool. Flag of successfull existance of log table (table to write a log of this script). 
+        files - :list of str. List of files downloaded locally. 
+        ch - :inst of class ClickHouseConnector. Compositional instance of class. More in api_methods.py module. 
+        log_evaluation :inst of class LogEvaluation. Compostitional instance of class. More in api_mehods.py module. 
+        log_request :inst of class LogRequest. Composititonal instance of class. More in api_mehods.py module.
+        deletion :inst of either class CleanPendingLog or CleanProcessedLog deletes other instances of other API Logs classes. Composititonal instance of class. More in api_mehods.py module.
+        status_request :inst of class StatusLog. Composititonal instance of class. More in api_mehods.py module.
+        parts - :list of ints. List of parts to download. Obtained from status_request. 
+        parts_amount - :int. Parts to download. Obtained from status_request. 
+        download_log_part - :inst of class DownloadLogPart. Composititonal instance of class. More in api_mehods.py module.
+
+    Methods: 
+        dates_parameters_normalization(self) - creates or transforms start and end dates if abscent. Runs on init. 
+        establish_db_connections(self)  - creates (if needed) ssh tunnel and db connection. Currently only login + password auth for ssh is working and only http protocol for db. Runs on init. Returns self.
+        check_db_tables(self) - if there is parameter run_db_table_test=true in global log - checks if db table from ch credentials exists. The same for log table and run_log_table_test param. Runs on init. Returns self.
+        check_log_evaluation(self) - safely creates, sends and then checks Logs API log evaluation possibility request. If fails: raises FlowException error. Returns self.
+        create_log_request(self,repeat=0) - safely creates and checks Logs API log creation request. If fails, will be repeated DEFAULT_API_QUERY_RETRIES times. Returns self.
+        delete_log(self,repeat=0) - safely deletes all the instances of Logs requests objects and deletes either Log in processing or processed Log.  If fails, will be repeated DEFAULT_API_QUERY_RETRIES times. Returns self.
+        log_status_check(self,repeat=0) - safely checks if Logs API log request is prepared or not. If yes, checks it's status and can either delete it or continue script execution. Returns self. 
+        log_downloader(self, repeat=0) - safely iterationally downloads and saves Logs API data to the local directory specified in temporary_data_path param of global_config. Repeats if fails. Returns self. 
+        write_data_to_db(self, repeat=0, file_list=None) - file_list: list of str, None - if not None, determines files to load. Safely iterationally loads localy saved tsv data files of Logs API to clickhouse table. 
+                        Repeats with file_list to repeat if fails. Calls delete_files method to delete successfully loaded temporary data. Returns self. 
+        delete_files(self, exclusion_list=None) - safely tries to delete all the downloaded data files. exclusion_list :list of str determines files to exclude from deletion. Returns self. 
+        write_log_to_db(self) - safely tries to load service log (log of the script run) to the table determined by logTable parameter of ch_credentials. Returns self. 
+        final_log_record(self, success=False) - sucess: bool, False by default. Creates the final log record with /finish endpoint, just to parse then easily to find out needed script run results. 
+        close_and_finish(self) - writes the last record of the service log(log of the script run), saves log to db and locally (last run log) and closes connections with successfull message. Returns self.  
     """
+
     DEFAULT_SUCCESS_CODE = 200 
     DEFAULT_ERROR_CODE = 500
 
@@ -60,6 +105,7 @@ class MainFlowWrapper:
         self.files = []
 
     def dates_parameters_normalization(self): 
+        """Method to fill in dates in case of their abscence."""
         if not self.params.get('date1') and not self.params.get('date2'):
             start_date = datetime.date(datetime.now()) - timedelta(days = 1)
             start_date = start_date.strftime("%Y-%m-%d")
@@ -73,8 +119,10 @@ class MainFlowWrapper:
             end_date = end_date.strftime("%Y-%m-%d")
             self.params['date2'] = end_date
         print(f"Date range for request: since {self.params.get('date1')} till {self.params.get('date2')}")
+        return self
 
     def establish_db_connections(self): 
+        """Method to establish connections with database. And, optionally, SSH tunnel."""
         login = self.ch_credentials.get('login')
         password = self.ch_credentials.get('password')
         host = self.ch_credentials.get('host')
@@ -89,27 +137,34 @@ class MainFlowWrapper:
         return self
     
     def check_db_tables(self): 
+        """Method to check data table (in case there is run_db_table_test parameter set), 
+        log table (in case both logTable in ch_credentials and run_log_table_test in global_config are set).
+
+        In case if continue_on_columns_test_fail set false in global_config and columns test will fail, script will throw an exception. 
+        The same will happen in case if continue_on_log_table_creation_fail is set false and log table wasn't created."""
+        #Let's check data table shallowly if test parameter was set to true: 
         if self.global_settings.get('run_db_table_test'): 
             #Getting api fields from config
             api_fields = self.api_settings.get('fields').split(',')
-
+            #Let's perform some queries:
             ch_dbs = self.ch.query_data(self.queries['db_query'], parameters = self.ch_credentials)
             ch_table = self.ch.query_data(self.queries['table_query'], parameters = self.ch_credentials)
             ch_columns = self.ch.query_data(self.queries['columns_query'], parameters = self.ch_credentials)
+
             #Check if there is data table and there are data columns and their amount is less or equal to fields in api config. 
             if ch_dbs is not None: 
                 if len(ch_dbs) > 0:
                     if len(ch_table) > 0:
                         if len(ch_columns) > 0:
                             ch_cols_list = [col[0] for col in ch_columns]
-                            if len(api_fields) > len(ch_cols_list):
+                            if len(api_fields) != len(ch_cols_list):
                                 if not self.global_settings.get('continue_on_columns_test_fail'): 
                                     self.logger.add_to_log(self.__class__.DEFAULT_ERROR_CODE, f"Database: {self.ch_credentials.get('db')}. Table: {self.ch_credentials.get('table')}", 
                                                     f"Table {self.ch_credentials.get('table')} has less columns, than API request.")
                                     self.logger.write_to_disk_incremental()
                                     self.final_log_record()
                                     self.logger.write_to_disk_last_run()
-                                    raise DatabaseException("Sorry, you want to download more fields, then there are in your table.")
+                                    raise DatabaseException("Sorry, you want to download different amount of fields, then there are in your table.")
                                 else: 
                                     self.logger.add_to_log(self.__class__.DEFAULT_ERROR_CODE, f"Database: {self.ch_credentials.get('db')}. Table: {self.ch_credentials.get('table')}", 
                                                     f"Table {self.ch_credentials.get('table')} has less columns, than API request, but global config params allow to continue.")
@@ -142,7 +197,8 @@ class MainFlowWrapper:
                 self.final_log_record()
                 self.logger.write_to_disk_last_run()
                 raise DatabaseException("Query wasn't performed. Probably, not enough rights to perform SELECT query.")
-
+            
+        #Checking logTable now:
         if self.global_settings.get('run_log_table_test') and self.ch_credentials.get('logTable') and isinstance(self.ch_credentials.get('logTable'), str):
             #Check if log table exists and if columns of log table are those should be. 
             ch_log_table = self.ch.query_data(self.queries.get('log_table_query'), parameters = self.ch_credentials)
@@ -363,7 +419,7 @@ class MainFlowWrapper:
             else: 
                 print("Nothing to download")
 
-    def write_data_to_db(self, repeat=0, file_list = None):
+    def write_data_to_db(self, repeat=0, file_list=None):
         settings = {"input_format_allow_errors_ratio": self.global_settings.get('bad_data_tolerance_perc', 0)/100,
                     "input_format_allow_errors_num": self.global_settings.get('absolute_db_format_errors_tolerance', 0), 
                     "input_format_with_names_use_header": self.global_settings.get('api_strict_db_table_cols_names')
@@ -414,7 +470,7 @@ class MainFlowWrapper:
     
     def write_log_to_db(self): 
         format = "%Y-%m-%d %H:%M:%S"
-        if self.ch_credentials.get('logTable'):
+        if self.ch_credentials.get('logTable') and self.is_log_table:
             rowed_log = self.logger.log.split('\n')[:-1]
             rowed_log = [col.split('\t') for col in rowed_log]
             for row in rowed_log: 
