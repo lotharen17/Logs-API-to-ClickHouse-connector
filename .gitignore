@@ -14,3 +14,5 @@ ch_credentials.json
 archieve/*
 data/*
 *__pycache__*
+.venv
+extraction_script.py
