@@ -5,16 +5,20 @@ class Logger:
     """Creates a piece of log and then writes it to disk/db.
 
     Arguments: 
-        path :str - path to log-file relatively to the current working directory.
-        run_log_path - path to save end-to-end log. 
+        path_continous :str - path for continuous (multi-run) log-file relatively to the current working directory.
+        path_last_run :str - path to save last-time log. 
 
     Properties: 
         log :str - end-to-end peace of log during current programm run. 
+        _path :str - path to save continuous log. 
+        _path_last :str - path to save last run log. 
+        _log_line :str - one line of the log. Usually, continuous log is written line by line. 
+        utils :inst of class UtilsSet - local utilities object to perform all the necessary operation. Composition. 
     
     Methods: 
         add_to_log(response :str, endpoint :str, description :str) - adds new line to the log variable. 
-        write_to_disk() - performs writing operation to the local disk. 
-        write_to_db( :ClassInstanceOfDBConnection) - performs writing operation to the database. 
+        write_to_disk_incremental(self, classMethod: str) - performs writing operation of _log_line to the continuous log on local disk. 
+        write_to_disk_last_run(self) - writes out last run log to the local disk. 
     """
 
     TAB_SEP = '\t'
@@ -29,10 +33,12 @@ class Logger:
 
     @property
     def log(self): 
+        #Just getter
         return self._log
 
     @property
     def path(self): 
+        #Just getter
         return self._path
 
     def add_to_log(self, response=200, endpoint='', description=''):
@@ -48,7 +54,6 @@ class Logger:
             _log_line is a tsv row with datetime of the datetime type, int repsonse code, str endpoint and str description (text). The _log is the 
             cummulative concatanation of _log_lines. 
         """
-        
         full_response = Logger.TAB_SEP + str(response)
         full_endpoint = Logger.TAB_SEP + endpoint 
         full_description = Logger.TAB_SEP + description + Logger.EOL_SEP

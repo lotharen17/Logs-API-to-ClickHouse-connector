@@ -30,10 +30,7 @@ class ClickHouseConnector:
         create_tunnel(self) - to establish connection with class' init arguments. Called in init by default. 
         tunnel_start(self) - to start the tunnel connection.
         tunnel_stop(self) - to stop the tunnel connection.
-        
-
-    Returns: 
-        tunnel :instance of SSHtunnel class or None - SSH tunnel to connect. 
+    
     """
 
     FORMAT = "TSVWithNames" #Logs API format of response. 
@@ -157,6 +154,8 @@ class ClickHouseConnector:
         
         Arguments: 
             self - uses global class' variables to establish connection
+        Returns: 
+            client :instance of clickhouse_connect class. 
         """
         classmethod = f"Class: {self.__class__.__name__}. Method: {self._establish_ch_connection.__name__}"
         client = None
@@ -180,11 +179,13 @@ class ClickHouseConnector:
         return client
     
     def re_establish_connection(self):  
+        """Method to re-establish connection to both ssh tunnel and clickhouse database."""
         if self.ssh is not None: 
             self.tunnel = self._establish_ssh_tunnel()
         self.ch_client = self._establish_ch_connection()
 
     def close_connections(self):
+        """Method that closes connections for both ssh tunnel and clickhouse instance."""
         classmethod = f"Class: {self.__class__.__name__}. Method: {self.close_connections.__name__}"
         if self.ch_client is not None: 
             self.ch_client.close()
@@ -199,6 +200,7 @@ class ClickHouseConnector:
                                         description = ClickHouseConnector.SSHCloseDescription).write_to_disk_incremental(classmethod)
 
     def query_data(self, query, **kwargs):
+        """Method to perform SQL query in database."""
         self.queries +=1
         classmethod = f"Class: {self.__class__.__name__}. Method: {self.query_data.__name__}"
         result = None
@@ -230,6 +232,7 @@ class ClickHouseConnector:
         return result
     
     def insert_datafile(self, file, settings=None): 
+        """Method to insert data from local datafile to clickhouse table."""
         result = False
         try: 
             clickhouse_connect.driver.tools.insert_file(self.ch_client,self.table, file, settings=settings, database = self.db, fmt = ClickHouseConnector.FORMAT)
@@ -238,6 +241,7 @@ class ClickHouseConnector:
             return result
 
     def insert_data(self, table, data): 
+        """Method to insert rows data to clickhouse table"""
         result = False 
         try: 
             self.ch_client.insert(table, data, database=self.db)

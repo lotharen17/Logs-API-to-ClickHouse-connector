@@ -5,13 +5,17 @@ class AbstractRequest:
     """Abstract class to send requests. Will be inherited by concrete classes
     
     Arguments: 
-        counterId - :str, id of a counter from credentials config. 
-        token - :str, OAuth token fro authorisation in Logs API. 
+        counterId :str, - id of a counter from credentials config. 
+        token :str, - OAuth token fro authorisation in Logs API. 
+        log_writer :inst of class Logger - to log operation. 
+        params :dict of parameters of api_credentials. 
 
     Constants: 
         BASE_URL - base URL of Yandex Metrica's Logs API endpoint with ternary macro for counterId: 'https://api-metrika.yandex.net/management/v1/counter/%s' . 
+        SPECIFIC_URL - specific part of URL to specify the Logs API method. 
         OAuth - string with ternary macro to store OAuth authorization token for Metrica's Logs API requests. 
         HTTP_METHOD - GET by default. Will be rewritten in separate distinct child-classes. 
+        SUCCESS_CODE - code to determine what we consider as a success result of request. 
         SPECIFIC_URL - specific constant end-part of URL. Will be rewritten for each child class. 
 
     Properties: 
@@ -23,11 +27,15 @@ class AbstractRequest:
         is_success - result if both request and its parsing returned success resutls (code 200 + there is a necessary data we expected). 
         response_code - response code to our request from Metrica's Logs API server. 
         response_body - body (dict or string, None by default) from Logs API server. 
+        log - instance of Logger class. Aggregation.
 
     Methods: 
         __init__(self, counterId, token, params=None) - initialization of instance of class. 
-        send_request(self, method = HTTP_METHOD) - to send request to Logs API. Also calls parse_response method. Returns self. 
-        parse_response(self, response) - to parse response (get it's status code and body and stores it as instance's properties.)
+        send_request(self) - to send request to Logs API. Also calls parse_response, deep_parse_response, is_success_logic, log_it methods. Returns self. 
+        parse_response(self, response) - method that shallowly parses response. Choses either text or json content. 
+        deep_parse_response(self) - method that parses meaningful content and stores it as response_body. 
+        is_success_logic(self) - method that checks whether we can consider request as successfull or not. 
+        log_it(self) - method, that logs request and its results. 
     """
 
     BASE_URL = 'https://api-metrika.yandex.net/management/v1/counter/%s/'
@@ -88,6 +96,9 @@ class AbstractRequest:
 
 
 class LogList(AbstractRequest): 
+    """Child singleton class inherited from AbstractRequest class to perform request to get
+    List of log requests. Read more: https://yandex.com/dev/metrika/en/logs/openapi/getLogRequests 
+    """
 
     SPECIFIC_URL = 'logrequests'
     MAX_REQUESTS_QUEUE = 10
@@ -97,6 +108,7 @@ class LogList(AbstractRequest):
         super().__init__(counterId, token, log_writer, params)
 
     def deep_parse_response(self):
+        """Extracting JSON content from response"""
         super().deep_parse_response()
         if self.response_code == self.__class__.SUCCESS_CODE: 
             self.response_body = self.response_body.get(self.__class__.SUCCESS_RESPONSE_KEY)
@@ -107,7 +119,10 @@ class LogList(AbstractRequest):
         return self
     
 
-class LogEvaluation(AbstractRequest): 
+class LogEvaluation(AbstractRequest):
+    """Singleton class to check if it's possible to create viable Logs API data request with parameters
+    from api_credentials.json config file. Read more: https://yandex.com/dev/metrika/en/logs/openapi/evaluate 
+    """
 
     SPECIFIC_URL = 'logrequests/evaluate'
     SUCCESS_RESPONSE_KEY  = 'log_request_evaluation'
@@ -129,6 +144,8 @@ class LogEvaluation(AbstractRequest):
     
 
 class CreateLog(AbstractRequest):
+    """Request to create Logs API data log preparation. Singltone child class from AbstractRequest. 
+    Read more: https://yandex.com/dev/metrika/en/logs/openapi/createLogRequest"""
 
     HTTP_METHOD = "POST"
     SPECIFIC_URL = "logrequests"
@@ -152,6 +169,8 @@ class CreateLog(AbstractRequest):
     
 
 class CleanProcessedLog(AbstractRequest): 
+    """Request to delete processed Log and its data. Singltone child of AbstractRequest parent class.
+    Read more: https://yandex.com/dev/metrika/en/logs/openapi/clean"""
 
     HTTP_METHOD = "POST"
     SPECIFIC_URL = "logrequest/%s/clean"
@@ -180,6 +199,8 @@ class CleanProcessedLog(AbstractRequest):
     
 
 class CleanPendingLog(CleanProcessedLog):
+    """Request to delete pending Log. Singltone child of CleanProcessedLog parent class.
+    Read more: https://yandex.com/dev/metrika/en/logs/openapi/cancel"""
 
     SPECIFIC_URL = "logrequest/%s/cancel"
 
@@ -188,6 +209,8 @@ class CleanPendingLog(CleanProcessedLog):
 
 
 class StatusLog(CleanProcessedLog): 
+    """Request to check status of Log in preparation. Singltone child of CleanProcessedLog parent class.
+    Read more: https://yandex.com/dev/metrika/en/logs/openapi/getLogRequest"""
 
     SPECIFIC_URL = "logrequest/%s"
     HTTP_METHOD = "GET"
@@ -223,6 +246,8 @@ class StatusLog(CleanProcessedLog):
     
 
 class DownloadLogPart(AbstractRequest):
+    """Request to download part of prepared Logs API data. Singltone child of AbstractRequest parent. 
+    Read more: https://yandex.com/dev/metrika/en/logs/openapi/download"""
 
     SPECIFIC_URL = 'logrequest/%s/part/'
     VARIABLE_PART_URL = '%s/download'

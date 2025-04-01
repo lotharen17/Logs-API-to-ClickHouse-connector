@@ -276,6 +276,7 @@ class MainFlowWrapper:
         return self
     
     def create_log_request(self, repeat = 0): 
+        """Method to create request to download Logs API data for Logs API endpoint."""
         time.sleep(self.__class__.DEFAULT_REQUEST_SLEEP)
         if self.log_evaluation.is_success: 
             self.log_request = CreateLog(self.counterId, self.token, self.logger, params=self.params)
@@ -299,6 +300,7 @@ class MainFlowWrapper:
             raise FlowException("The request wasn't evaluated or cannot be evaluated. Please, check sequence of methods calls, reduce dates range or reduce params amount.")
         
     def delete_log(self, repeat = 0):
+        """Method to perform deletion of Logs API request_id and prepared or pending log."""
         try: 
             del self.log_evaluation
             del self.log_request
@@ -325,6 +327,7 @@ class MainFlowWrapper:
                 print(f"Deletion of {self.request_id} wasn't performed according to global config.")
         
     def log_status_check(self, repeat=0):
+        """Method to check status of created Logs API data log."""
         if self.log_request.is_success:
             if self.frequency*(repeat+1) <= self.status_timeout: 
                 time.sleep(self.frequency)
@@ -375,6 +378,7 @@ class MainFlowWrapper:
             raise FlowException("The request wasn't created. Please, check sequence of methods calls.")
         
     def log_downloader(self, repeat=0):
+        """Method to download Logs API prepared data."""
         if self.status_request.is_success: 
             if self.parts_amount > 0:
                 self.download_log_part = DownloadLogPart(self.counterId, self.request_id, self.token, self.logger)
@@ -420,6 +424,7 @@ class MainFlowWrapper:
                 print("Nothing to download")
 
     def write_data_to_db(self, repeat=0, file_list=None):
+        """Method to load previously downloaded data files to database. Deletes downloaded and successfully uploaded to db files."""
         settings = {"input_format_allow_errors_ratio": self.global_settings.get('bad_data_tolerance_perc', 0)/100,
                     "input_format_allow_errors_num": self.global_settings.get('absolute_db_format_errors_tolerance', 0), 
                     "input_format_with_names_use_header": self.global_settings.get('api_strict_db_table_cols_names')
@@ -457,6 +462,7 @@ class MainFlowWrapper:
                                 Please, re-run run the script and perform FINAL deduplication in ClickHouse.")
         
     def delete_files(self, exclusion_list=None): 
+        """Method to delete downloaded datafiles. Not used distinctly."""
         if self.global_settings.get('delete_temp_data'): 
             if exclusion_list is None or self.global_settings.get('delete_not_uploaded_to_db_temp_data'): 
                 exclusion_list = []
@@ -469,6 +475,7 @@ class MainFlowWrapper:
         return self
     
     def write_log_to_db(self): 
+        """Method to write out last run log to database. Not used distinctly."""
         format = "%Y-%m-%d %H:%M:%S"
         if self.ch_credentials.get('logTable') and self.is_log_table:
             rowed_log = self.logger.log.split('\n')[:-1]
@@ -485,6 +492,7 @@ class MainFlowWrapper:
         return self
     
     def final_log_record(self, success=False):
+        """Method to create last record in the log of script run."""
         if success: 
             response = self.DEFAULT_SUCCESS_CODE
             description = 'Script finished successfully.'
@@ -497,6 +505,7 @@ class MainFlowWrapper:
         return self
 
     def close_and_finish(self):
+        """Method to close connections and to write out last run log to db and disk."""
         self.final_log_record(True)
         self.write_log_to_db()
         self.ch.close_connections()
