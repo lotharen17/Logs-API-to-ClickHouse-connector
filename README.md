@@ -8,7 +8,7 @@ Ensure you have **Python 3.10+**, **ClickHouse 25+ version** installed, and a da
 Then:  
 
 1. Install all dependencies by running  ```bash pip install -r requirements.txt```. 
-2. Fill in the configuration files (`.json` files in config/folder). [See more details below](#config-files-description).  
+2. Fill in the configuration files (`.json` files in config/folder). [See config files description](#config-files-description).  
 3. Run `main.py`.  
 4. Enjoy your Logs API data in ClickHouse!  
 
@@ -16,13 +16,13 @@ Then:
 
 ## General Description  
 
-  This extractor was developed by ex-Yandex.Metrika employee as a pet project to pull data from the [**Yandex Metrica Logs API**](https://yandex.com/dev/Metrica/en/logs/) and store it in a **local** or **remote** [**ClickHouse**](https://clickhouse.com/) instance via SSH. **Currently supported only HTTP interface and SSH tunneling with login + password authorization, no keychains support yet**. 
+  This extractor was developed by **ex-Yandex.Metrika employee** as a pet project to pull data from the [**Yandex Metrica Logs API**](https://yandex.com/dev/Metrica/en/logs/) and store it in a **local** or **remote** [**ClickHouse**](https://clickhouse.com/) instance via SSH. **Currently supported only HTTP interface and SSH tunneling with login + password authorization, no keychains support yet**. 
 
   It works seamlessly with both:  
   - [**Sessions/Visits Table**](https://yandex.com/dev/Metrica/en/logs/fields/visits)  
   - [**Events/Hits Table**](https://yandex.com/dev/Metrica/en/logs/fields/hits)  
 
-Configuration is determined via multiple JSON files. [See the config files section](#config-files).  
+Configuration is determined via multiple JSON files. [See config files description](#config-files-description).  
 
 ### Automation  
 Extractor execution can be automated using:  
@@ -31,11 +31,11 @@ Extractor execution can be automated using:
 - **Any Other Orchestration Tool**  
 
 ### What it basically does?
-1. Extractor downloads data in **TSV format** in folder, determined by global_config.json file. It would have used gzip, but, unfortunatelly,there is confirmed bug with gzip accept encoding header on Metrika's Logs API side. 
+1. Extractor downloads data in **TSV format** in folder, determined by `global_config.json` file. It would have used `gzip`, but, unfortunatelly,there is confirmed bug with `gzip` `accept encoding` header on Metrika's Logs API side. 
 2. Data then being loaded into a **local ClickHouse instance**.  
-   - If `ssh` in `ch_credentials.json` is null or false, data is stored locally.  
-   - If `ssh` is set, an SSH connection is established, and data is transmitted to a remote ClickHouse instance.  
-3. After all, data is either deleted or stored for future purposes, see more in global_config section. 
+   - If `ssh` in `ch_credentials.json` is `null` or `false`, data is stored locally.  
+   - If `ssh` is set, an SSH connection is established, and data is transmitted to a remote `ClickHouse` instance.  
+3. After all, data is either deleted or stored for future purposes, see more in [`global_config.json`](#global_configjson) section. 
 ---
 
 ## Prerequisites  
