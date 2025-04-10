@@ -1,4 +1,4 @@
-# Extractor + Connector for Yandex.Metrica Logs API to Local ClickHouse (OOP Version)  
+# Python data transmission connector: from Yandex.Metrika Logs API to ClickHouse 
 
 ---
 
@@ -31,7 +31,7 @@ Extractor execution can be automated using:
 - **Any Other Orchestration Tool**  
 
 ### What it basically does?
-1. Extractor downloads data in **TSV format** in folder, determined by `global_config.json` file. It would have used `gzip`, but, unfortunatelly,there is confirmed bug with `gzip` `accept encoding` header on Metrika's Logs API side. 
+1. Extractor downloads data in **TSV format** in folder, determined by `global_config.json` file. It would have used `gzip`, but, unfortunatelly,there is confirmed bug with `gzip` `accept-encoding` header on Metrika's Logs API side. 
 2. Data then being loaded into a **local ClickHouse instance**.  
    - If `ssh` in `ch_credentials.json` is `null` or `false`, data is stored locally.  
    - If `ssh` is set, an SSH connection is established, and data is transmitted to a remote `ClickHouse` instance.  
@@ -132,7 +132,7 @@ Extractor execution can be automated using:
     - `port`: Local machine port bound to the remote port.  
     - `remote_port_bind`: Remote `ClickHouse` `HTTP` interface port (default **`8123`**). [More details](https://clickhouse.com/docs/en/interfaces/http#http-interface). Currently only HTTP supported. 
 
-  ***Example:***
+  ***Example of ssh sub-json:***
   ```json
   "ssh": {
     "login": "your_ssh_username",
@@ -216,7 +216,7 @@ Extractor execution can be automated using:
   - `absolute_db_format_errors_tolerance`: Integer. Maximum number of formatting errors allowed when uploading a single file to the database before an error is raised.  
   Default: `10`.
 
-    **Example:**
+    **Example of `global_config.json`:**
     ```json
     {
       "log_continuous_path": "logs/logs.log",
