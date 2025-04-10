@@ -139,7 +139,8 @@ Extractor execution can be automated using:
     }
     ``` 
 
-#### `ch_credentials.json`
+#### `global_config.json`
+
   Contains next settings: 
 
 	  - `log_continuous_path`: path to script's log. Will store history of all script runs. Default value: "logs/logs.log".logs folder may be abscent by default. You can create it manually or it will be created by the script automatically. 
@@ -149,18 +150,39 @@ Extractor execution can be automated using:
     - `delete_temp_data`: boolean parameter. If true - deletes downloaded data, if false - stores it for some future purposes. Default: true.  
     - `delete_not_uploaded_to_db_temp_data`: boolean parameter. If true and `delete_temp_data` true, excludes those files, which weren't successfully downloaded to ClickHouse. By default: true. 
     - `api_strict_db_table_cols_names`: boolean parameter. If true, makes mapping matching between column names and downloaded column names of tsv files, only matched columns will be written to databse. Allows to ignore order of logs API fields set. If false, script will try to write all downloaded Logs API fields to ClickHouse in the same order. So it's very important to maintain the same order of Logs API reuired fields as columns order in database. By default: false. 
-    - `run_db_table_test`:true, 
-    - `continue_on_columns_test_fail`: true,
-    - `run_log_table_test`: true, 
-    - `create_log_table_on_fail`: true, 
-    - `continue_on_log_table_creation_fail`: true, 
-    - `clear_api_queue`: true,
-    - `clear_created_logs_request`: true, 
-    - `frequency_api_status_check_sec`: 30, 
-    - `api_status_wait_timeout_min`: 30, 
-    - `data_loss_tolerance_perc`: 10, 
-    - `bad_data_tolerance_perc`: 15,
-    - `absolute_db_format_errors_tolerance`: 10
+    - `run_db_table_test`: boolean parameter. If true, runs shallow test: checks whether database and table exists. If `continue_on_columns_test_fail` parameter (see the next one) is false and amount of columns in table and `api_credentials.json` file doesn't match - script will throw Error and stop. If `continue_on_columns_test_fail` is true, then execution of the script will continue. It makes sense only if you have the same names of columns in database as fields of Logs API and `api_strict_db_table_cols_names` parameter true, because in other case data won't be written to database and in case it's not deleted, you will need to upload it manually or to change configs and repeat the script execution. If database or table wasn't found - script will throw an error and stop working. In case this parameter is false, test will be skipped. Default: true.
+    - `continue_on_columns_test_fail`: boolean parameter. Makes sense only if `run_db_table_test` is true, otherwise it's not significant. If true, will continue script execution in case columns amount in database is different from parameters amount in `api_credentials.json` file. It makes sense only if the names of columns in ClickHouse table are the same as Logs API params plus there is parameter api_strict_db_table_cols_names set true - in this case columns will be matched with parameters by names. Otherwise, data won't be written to database. Default: false.
+    - `run_log_table_test`: boolean parameter. If true, checks if log table with name, set in `ch_credentials.json` `logTable` param exists and has expected columns. Skips check if false. Default: true. 
+    - `create_log_table_on_fail`: boolean parameter. If true, creates logTable with name, set as `logTable` parameter in `ch_credentials.json` config file. If false - skips that, but log won't be written to logTable. Default: true. 
+    - `continue_on_log_table_creation_fail`: boolean parameter. If true, continues script execution even if logTable doesn't exist/exists with wrong columns. Means, log won't be written to database. Default: false. 
+    - `clear_api_queue`: boolean parameter. If true, clears Logs API queue of both prepared and pending logs to try to free enough space to prepare new Log request. If false: doesn't try to clear Logs API queue, means the queue will be preserved, but new Log reuqest highly likely doesn't have any chances to be created. Default value: true. 
+    - `clear_created_logs_request`: boolean parameter. If true, clears log request that was created during current script run. It's a golden rule: don't leave a mess after yourself. Default: true. 
+    - `frequency_api_status_check_sec`: integer parameter. Sets how often (in seconds) script will check if request was prepared to downloading or still in pedings (or returned some error). By default - 30 (seconds). 
+    - `api_status_wait_timeout_min`: integer parameter. Defines, for how long script will wait till Logs API request will be prepared. By default - 30 (minutes).  
+    - `data_loss_tolerance_perc`: integer parameter. Defines tolerancy level to dataloss (data that wasn't downloaded from Metrika server) in percents. By default - 10 (percent). 
+    - `bad_data_tolerance_perc`: integer parameter. Defines tolerancy level for data not to be written to database. Means, how many percents of data can be not written to db without raising an error. By default - 15 (percent). 
+    - `absolute_db_format_errors_tolerance`: integer parameter. Defines, how many errors in absolutes can be during uploading one file of data to databse withour raising an error. Default value: 10
 
-
-
+  Example: 
+    ```json
+      {	
+        "log_continuous_path": "logs/logs.log",
+        "log_last_run_path": "logs/last_run.log", 
+        "temporary_data_path": "data/",
+        "delete_temp_data": true, 
+        "delete_not_uploaded_to_db_temp_data": true, 
+        "api_strict_db_table_cols_names": true, 
+        "run_db_table_test":true, 
+        "continue_on_columns_test_fail": true,
+        "run_log_table_test": true, 
+        "create_log_table_on_fail": true, 
+        "continue_on_log_table_creation_fail": true, 
+        "clear_api_queue": true,
+        "clear_created_logs_request": true, 
+        "frequency_api_status_check_sec": 30, 
+        "api_status_wait_timeout_min": 30, 
+        "data_loss_tolerance_perc": 10, 
+        "bad_data_tolerance_perc": 15,
+        "absolute_db_format_errors_tolerance": 10
+      }
+    ``` 
