@@ -109,18 +109,18 @@ Extractor execution can be automated using:
   - `ssh` *(null or dictionary)*: If null, data is loaded locally. If provided, SSH credentials must be specified. 
 
   ***Exmaple of `ch_credentials.json` file without ssh connection:***
-    ```json
-    {
-      "login":"default", 
-      "password": "",
-      "host": "localhost",  
-      "port": 8123, 
-      "db": "debuging", 
-      "table": "visits2",
-      "logTable": "extractor_log",
-      "ssh": null
-    }
-    ```  
+  ```json
+  {
+    "login":"default", 
+    "password": "",
+    "host": "localhost",  
+    "port": 8123, 
+    "db": "debuging", 
+    "table": "visits2",
+    "logTable": "extractor_log",
+    "ssh": null
+  }
+  ```  
   But if you need SSH connection, instead null set SSH connection properties: 
     - `login`: SSH username.  
     - `password`: SSH password.  
@@ -129,15 +129,15 @@ Extractor execution can be automated using:
     - `remote_port_bind`: Remote ClickHouse HTTP interface port (default **8123**). [More details](https://clickhouse.com/docs/en/interfaces/http#http-interface). Currently only HTTP supported. 
 
   ***Example:***
-    ```json
-    "ssh": {
-      "login": "your_ssh_username",
-      "password": "your_ssh_password",
-      "host": "remote_host_address",
-      "port": 22,
-      "remote_port_bind": 8123
-    }
-    ``` 
+  ```json
+  "ssh": {
+    "login": "your_ssh_username",
+    "password": "your_ssh_password",
+    "host": "remote_host_address",
+    "port": 22,
+    "remote_port_bind": 8123
+  }
+  ``` 
 
 #### `global_config.json`
 
