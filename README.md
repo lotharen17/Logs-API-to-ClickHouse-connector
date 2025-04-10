@@ -6,10 +6,11 @@
 
 Ensure you have **Python 3.10+**, **ClickHouse 25+ version** installed, and a database with at least one table created.  
 Then:  
-0. Install all dependencies by running  ```bash pip install -r requirements.txt```. 
-1. Fill in the configuration files (`.json` files in config/folder). [See more details below](#config-files).  
-2. Run `main.py`.  
-3. Enjoy your Logs API data in ClickHouse!  
+
+1. Install all dependencies by running  ```bash pip install -r requirements.txt```. 
+2. Fill in the configuration files (`.json` files in config/folder). [See more details below](#config-files-description).  
+3. Run `main.py`.  
+4. Enjoy your Logs API data in ClickHouse!  
 
 ---
 
@@ -54,16 +55,19 @@ Extractor execution can be automated using:
    - You can either name columns like entities of Logs API visits/hits table, or make more human-readable names. I.e.: either `ym:s:visitID` or `visitID`. In former case you will have more flexablity: for LogsAPI config you can leave all the fields to download with random order and it will be mapped to table columns by names. In latter case, you will need to order API fields in the same order as columns ordered in your table in database and always check if you have the same amount of fields in your logs api config file and in your ClickHouse table. 
    - Recommended table engine: `ReplacingMergeTree` (suited for Metrica Logs API data, as there are no `Sign` or `ver` fields).  
    - Recommended primary key (order by) for visits:  
+
      ```sql
      ORDER BY (visitID, counterUserIDHash, counterID)
      ```
-     *(Omit `counterID` if using only one counter.)*  
-  - Recommended primary key (order by) for hits: 
+    *(Omit `counterID` if using only one counter.)*  
+
+   - Recommended primary key (order by) for hits: 
+
      ```sql
      ORDER BY (watchID, counterUserIDHash, counterID)
      ```
-     *(Omit `counterID` if using only one counter.)*  
-6. **Python 3.10+** and the corresponding `pip3`.  
+    *(Omit `counterID` if using only one counter.)*  
+6. **`Python 3.10+`** and the corresponding `pip3`.  
 7. Dependencies will be downloaded from requirements.txt file with pip: 
     ```bash
     pip install -r requirements.txt
@@ -79,7 +83,7 @@ Extractor execution can be automated using:
   - `token` *(string)*: Your Yandex OAuth token (e.g., `"token": "d2_eerr534"`). [How to get one](https://yandex.com/dev/metrika/en/intro/authorization#get-oauth-token).  
   - `counter` *(string)*: Your Yandex counter ID (e.g., `"counter": "123456"`). 
   - `date1` *(string, nullable)*:  Start date to request data for. Leave it `null` to be yesterday. 
-  - `date2` *(string, nullable)*: End date to request data for. Maximum value - the day before current one (yesterday). Leave in `null` to be yesterday. You can set date1 distinctly and date2 as `null` to request data since date1 till yesterday, or set both date1 and date2 nulls to request data only for yesterday. 
+  - `date2` *(string, nullable)*: End date to request data for. Maximum value - the day before current one (yesterday). Leave in `null` to be yesterday. You can set date1 distinctly and `date2` as `null` to request data since `date1` till yesterday, or set both `date1` and `date2` nulls to request data only for yesterday. 
   - `fields` *(string)*: Comma-separated listing of fields (either for [sessions](https://yandex.com/dev/metrika/en/logs/fields/visits) or [events](https://yandex.com/dev/metrika/en/logs/fields/hits)).  
   - `source` *(string)*: Either `"visits"` for sessions or `"hits"` for events. 
   - `attribution` *(string)*: By default `"last"`, [see full values list](https://yandex.com/dev/metrika/en/logs/param).
@@ -99,14 +103,14 @@ Extractor execution can be automated using:
   ```
 
 #### `ch_credentials.json`
-  - `login` *(string)*: ClickHouse login.  
-  - `password` *(string)*: ClickHouse password.  
-  - `host` *(string)*: ClickHouse host address.  
-  - `port` *(integer)*: ClickHouse port. Or local port to be bonded with remote ssh port. Can be null to automatically choose local port to bond.   
-  - `db` *(string)*: ClickHouse database name.  
-  - `table` *(string)*: ClickHouse table name.  
-  - `logTable` *(string)*: ClickHouse table name for log of the script run. 
-  - `ssh` *(null or dictionary)*: If null, data is loaded locally. If provided, SSH credentials must be specified. 
+  - `login` *(string)*: `ClickHouse` login.  
+  - `password` *(string)*: `ClickHouse` password.  
+  - `host` *(string)*: `ClickHouse` host address.  
+  - `port` *(integer)*: `ClickHouse` port. Or local port to be bonded with remote `SSH` port. Can be null to automatically choose local port to bond.   
+  - `db` *(string)*: `ClickHouse` database name.  
+  - `table` *(string)*: `ClickHouse` table name.  
+  - `logTable` *(string)*: `ClickHouse` table name for log of the script run. 
+  - `ssh` *(null or dictionary)*: If null, data is loaded locally. If provided, `SSH` credentials must be specified. 
 
   ***Exmaple of `ch_credentials.json` file without ssh connection:***
   ```json
@@ -121,12 +125,12 @@ Extractor execution can be automated using:
     "ssh": null
   }
   ```  
-  But if you need SSH connection, instead null set SSH connection properties: 
-    - `login`: SSH username.  
-    - `password`: SSH password.  
-    - `host`: Remote machine hostname or IP.  
+  But if you need `SSH` connection, instead null set `SSH` connection properties: 
+    - `login`: `SSH` username.  
+    - `password`: `SSH` password.  
+    - `host`: Remote machine hostname or `IP`.  
     - `port`: Local machine port bound to the remote port.  
-    - `remote_port_bind`: Remote ClickHouse HTTP interface port (default **8123**). [More details](https://clickhouse.com/docs/en/interfaces/http#http-interface). Currently only HTTP supported. 
+    - `remote_port_bind`: Remote `ClickHouse` `HTTP` interface port (default **`8123`**). [More details](https://clickhouse.com/docs/en/interfaces/http#http-interface). Currently only HTTP supported. 
 
   ***Example:***
   ```json
@@ -144,73 +148,73 @@ Extractor execution can be automated using:
   Contains the following settings:
 
   - `log_continuous_path`: Path to the script's log file. Stores the history of all script runs.  
-    Default: `"logs/logs.log"`.  
-    The `logs` folder may not exist initially — you can create it manually, or the script will create it automatically.  
+  Default: `"logs/logs.log"`.  
+  The `logs` folder may not exist initially — you can create it manually, or the script will create it automatically.  
 
   - `log_last_run_path`: Path to the script's last run log file. Stores information only about the last run.  
-    Default: `"logs/last_run.log"`.
+  Default: `"logs/last_run.log"`.
 
   - `temporary_data_path`: Directory to store downloaded CSV files from the Logs API.  
     Default: `"data/"`.  
     Each file will be named using the formula:  
     `datetime-counterId-source(hits/visits)-part{part_number}.tsv`  
-    Example: `2025-06-10 11:24:25-12345678-visits-part9.tsv`
+  Example: `2025-06-10 11:24:25-12345678-visits-part9.tsv`
 
   - `delete_temp_data`: Boolean. If `true`, deletes downloaded data after processing. If `false`, keeps it for future use.  
-    Default: `true`.
+  Default: `true`.
 
   - `delete_not_uploaded_to_db_temp_data`: Boolean. If `true` and `delete_temp_data` is also `true`, excludes files that weren't successfully uploaded to ClickHouse from deletion.  
-    Default: `true`.
+  Default: `true`.
 
   - `api_strict_db_table_cols_names`: Boolean. If `true`, maps columns by name (not order) — only matching columns will be written to the database.  
     If `false`, all fields from the Logs API will be written to ClickHouse in the same order as the database expects, so the order of fields becomes critical.  
-    Default: `false`.
+  Default: `false`.
 
   - `run_db_table_test`: Boolean. If `true`, performs a basic test to check if the database and table exist.  
     - If `continue_on_columns_test_fail` is `false` and the number of columns in the database does not match `api_credentials.json`, the script throws an error and stops.  
     - If `continue_on_columns_test_fail` is `true`, the script continues, assuming column names match and `api_strict_db_table_cols_names` is enabled.  
     - If the database or table doesn't exist, an error is raised and the script stops.  
-    Default: `true`.
+  Default: `true`.
 
   - `continue_on_columns_test_fail`: Boolean. Only relevant if `run_db_table_test` is `true`.  
     If `true`, continues script execution even if the column count in the database and the parameters in `api_credentials.json` differ.  
     Works correctly only if column names match and `api_strict_db_table_cols_names` is also `true`.  
-    Default: `false`.
+  Default: `false`.
 
   - `run_log_table_test`: Boolean. If `true`, verifies that the log table specified in `ch_credentials.json` (`logTable` param) exists and has the expected columns.  
     If `false`, this check is skipped.  
-    Default: `true`.
+  Default: `true`.
 
   - `create_log_table_on_fail`: Boolean. If `true`, creates the `logTable` (as specified in `ch_credentials.json`) if it doesn't exist.  
     If `false`, table creation is skipped, and logs won't be written to the table.  
-    Default: `true`.
+  Default: `true`.
 
   - `continue_on_log_table_creation_fail`: Boolean. If `true`, continues execution even if the `logTable` is missing or has incorrect columns.  
     In this case, logs won't be saved to the database.  
-    Default: `false`.
+  Default: `false`.
 
   - `clear_api_queue`: Boolean. If `true`, clears the Logs API queue (both prepared and pending requests) to free space for new requests.  
     If `false`, existing requests are preserved, but creating a new request may fail due to lack of space.  
-    Default: `true`.
+  Default: `true`.
 
   - `clear_created_logs_request`: Boolean. If `true`, deletes the Logs API request created during the current script run.  
     This ensures cleanup and avoids leaving orphaned requests.  
-    Default: `true`.
+  Default: `true`.
 
   - `frequency_api_status_check_sec`: Integer. Defines how often (in seconds) the script checks if the Logs API request is ready for download or still pending.  
-    Default: `30`.
+  Default: `30`.
 
   - `api_status_wait_timeout_min`: Integer. Maximum time (in minutes) the script waits for the Logs API request to be prepared.  
-    Default: `30`.
+  Default: `30`.
 
   - `data_loss_tolerance_perc`: Integer. Sets the maximum allowable percentage of data loss (data that couldn't be downloaded from the Metrica server).  
-    Default: `10`.
+  Default: `10`.
 
   - `bad_data_tolerance_perc`: Integer. Sets the maximum allowable percentage of data that can fail to be written to the database without raising an error.  
-    Default: `15`.
+  Default: `15`.
 
   - `absolute_db_format_errors_tolerance`: Integer. Maximum number of formatting errors allowed when uploading a single file to the database before an error is raised.  
-    Default: `10`.
+  Default: `10`.
 
     **Example:**
     ```json
