@@ -59,30 +59,30 @@ Extractor execution can be automated using:
 2. A Yandex account with at least **view access** to the Metrica tag/counter. [More details](https://yandex.com/support/metrica/general/access.html#guest).  
 3. A **Yandex OAuth Token** with access to Yandex.Metrica. [Generate one here](https://yandex.com/dev/metrika/en/intro/authorization#get-oauth-token).  
 4. A **ClickHouse instance** installed:  
-   - Locally  
-   - Remotely, but remote host accessible via SSH ( login+password authorization supported)
-   - In a Docker container (either local or remote)  
-   - If using a **remote ClickHouse instance**, SSH connection details must be provided in `ch_credentials.json` (currently supports only login+password authorization).  
+  - Locally  
+  - Remotely, but remote host accessible via SSH ( login+password authorization supported)
+  - In a Docker container (either local or remote)  
+  - If using a **remote ClickHouse instance**, SSH connection details must be provided in `ch_credentials.json` (currently supports only login+password authorization).  
 5. A **database and table created in ClickHouse**:  
-   - Currently, the script works with **one database, one table, and one Logs API entity at a time** (either sessions or events).  
-   - To handle multiple sources, duplicate the script with different configurations.  
-   - You can either name columns like entities of Logs API visits/hits table, or make more human-readable names. I.e.: either `ym:s:visitID` or `visitID`. In former case you will have more flexablity: for LogsAPI config you can leave all the fields to download with random order and it will be mapped to table columns by names. In latter case, you will need to order API fields in the same order as columns ordered in your table in database and always check if you have the same amount of fields in your logs api config file and in your `ClickHouse` table. 
-   - Recommended table engine: [`ReplacingMergeTree`](https://clickhouse.com/docs/engines/table-engines/mergetree-family/replacingmergetree) (suited for Metrica Logs API data, as there are no `Sign` or `ver` fields).  
-   - Recommended primary key (order by) for visits:  
+  - Currently, the script works with **one database, one table, and one Logs API entity at a time** (either sessions or events).  
+  - To handle multiple sources, duplicate the script with different configurations.  
+  - You can either name columns like entities of Logs API visits/hits table, or make more human-readable names. I.e.: either `ym:s:visitID` or `visitID`. In former case you will have more flexablity: for LogsAPI config you can leave all the fields to download with random order and it will be mapped to table columns by names. In latter case, you will need to order API fields in the same order as columns ordered in your table in database and always check if you have the same amount of fields in your logs api config file and in your `ClickHouse` table. 
+  - Recommended table engine: [`ReplacingMergeTree`](https://clickhouse.com/docs/engines/table-engines/mergetree-family/replacingmergetree) (suited for Metrica Logs API data, as there are no `Sign` or `ver` fields).  
+  - Recommended primary key (order by) for visits:  
 
      ```sql
      ORDER BY (visitID, counterUserIDHash, counterID)
      ```
     *(Omit `counterID` if using only one counter.)*  
 
-   - Recommended primary key (order by) for hits: 
+  - Recommended primary key (order by) for hits: 
 
      ```sql
      ORDER BY (watchID, counterUserIDHash, counterID)
      ```
     *(Omit `counterID` if using only one counter.)*  
 
-   - This script can also write log of execution of the script itself to Log table in `ClickHouse`. To do that - set name of log table as a value of `logTable` parameter in [`ch_credentials.json`](#ch_credentialsjson). Log table should be created like this: 
+  - This script can also write log of execution of the script itself to Log table in `ClickHouse`. To do that - set name of log table as a value of `logTable` parameter in [`ch_credentials.json`](#ch_credentialsjson). Log table should be created like this: 
 
     ```sql
     CREATE OR REPLACE TABLE db_name.log_table_name
