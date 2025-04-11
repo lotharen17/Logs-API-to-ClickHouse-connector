@@ -1,6 +1,6 @@
 # :uk: Yandex.Metrika Logs API to ClickHouse Python connector :bar_chart:
 
-  This extractor was developed by **ex-Yandex.Metrika employee** as a pet project during emigration's depression. In honour of all of my ex-colleagues, my exes and my ex-companies. 
+  This extractor was developed by **ex-Yandex.Metrika employee** as a pet project during emigration's depression. In honour of all of my ex-colleagues. 
 
   Concepts used: 
   - OOP; 
@@ -66,8 +66,8 @@ Extractor execution can be automated using:
 5. A **database and table created in ClickHouse**:  
    - Currently, the script works with **one database, one table, and one Logs API entity at a time** (either sessions or events).  
    - To handle multiple sources, duplicate the script with different configurations.  
-   - You can either name columns like entities of Logs API visits/hits table, or make more human-readable names. I.e.: either `ym:s:visitID` or `visitID`. In former case you will have more flexablity: for LogsAPI config you can leave all the fields to download with random order and it will be mapped to table columns by names. In latter case, you will need to order API fields in the same order as columns ordered in your table in database and always check if you have the same amount of fields in your logs api config file and in your ClickHouse table. 
-   - Recommended table engine: `ReplacingMergeTree` (suited for Metrica Logs API data, as there are no `Sign` or `ver` fields).  
+   - You can either name columns like entities of Logs API visits/hits table, or make more human-readable names. I.e.: either `ym:s:visitID` or `visitID`. In former case you will have more flexablity: for LogsAPI config you can leave all the fields to download with random order and it will be mapped to table columns by names. In latter case, you will need to order API fields in the same order as columns ordered in your table in database and always check if you have the same amount of fields in your logs api config file and in your `ClickHouse` table. 
+   - Recommended table engine: [`ReplacingMergeTree`](https://clickhouse.com/docs/engines/table-engines/mergetree-family/replacingmergetree) (suited for Metrica Logs API data, as there are no `Sign` or `ver` fields).  
    - Recommended primary key (order by) for visits:  
 
      ```sql
@@ -82,7 +82,7 @@ Extractor execution can be automated using:
      ```
     *(Omit `counterID` if using only one counter.)*  
 
-   - This script can also write log of execution of the script itself to Log table in ClickHouse. To do that - set name of log table as a value of `logTable` parameter in [`ch_credentials.json`](#ch_credentialsjson). Log table should be created like this: 
+   - This script can also write log of execution of the script itself to Log table in `ClickHouse`. To do that - set name of log table as a value of `logTable` parameter in [`ch_credentials.json`](#ch_credentialsjson). Log table should be created like this: 
 
     ```sql
     CREATE OR REPLACE TABLE db_name.log_table_name
@@ -96,10 +96,11 @@ Extractor execution can be automated using:
     ORDER BY (datetime, response, endpoint);
     ```
 6. **`Python 3.10+`** and the corresponding `pip3`.  
-7. Dependencies will be downloaded from requirements.txt file with pip: 
+7. Dependencies will be downloaded from `requirements.txt` file with `pip` (or `pip3`): 
     ```bash
     pip install -r requirements.txt
     ``` 
+8. Up to 20 gigabytes of free space, as current implementation downloads all the data from the server and only then uploads it to DB.
 
 ---
 
@@ -114,7 +115,7 @@ Extractor execution can be automated using:
   - `date2` *(string, nullable)*: End date to request data for. Maximum value - the day before current one (yesterday). Leave in `null` to be yesterday. You can set date1 distinctly and `date2` as `null` to request data since `date1` till yesterday, or set both `date1` and `date2` nulls to request data only for yesterday. 
   - `fields` *(string)*: Comma-separated listing of fields (either for [sessions](https://yandex.com/dev/metrika/en/logs/fields/visits) or [events](https://yandex.com/dev/metrika/en/logs/fields/hits)).  
   - `source` *(string)*: Either `"visits"` for sessions or `"hits"` for events. 
-  - `attribution` *(string)*: By default `"last"`, [see full values list](https://yandex.com/dev/metrika/en/logs/param).
+  - `attribution` *(string)*: By default `"LASTSIGN"`, [see full values list](https://yandex.com/dev/metrika/en/logs/param).
 
   ***Example of filled `api_credentials.json` file:***
   
@@ -126,7 +127,7 @@ Extractor execution can be automated using:
     "date2": null,
     "fields":"ym:s:visitID,ym:s:counterID,ym:s:watchIDs,ym:s:date,ym:s:dateTime,ym:s:dateTimeUTC,ym:s:isNewUser,ym:s:startURL,ym:s:endURL,ym:s:pageViews,ym:s:visitDuration,ym:s:bounce,ym:s:ipAddress,ym:s:regionCountry,ym:s:regionCity,ym:s:regionCountryID,ym:s:regionCityID,ym:s:clientID,ym:s:counterUserIDHash,ym:s:networkType,ym:s:goalsID,ym:s:goalsSerialNumber,ym:s:goalsDateTime,ym:s:goalsPrice,ym:s:goalsOrder,ym:s:goalsCurrency,ym:s:<attribution>TrafficSource,ym:s:<attribution>AdvEngine,ym:s:<attribution>ReferalSource,ym:s:<attribution>SearchEngineRoot,ym:s:<attribution>SearchEngine,ym:s:<attribution>SocialNetwork,ym:s:<attribution>SocialNetworkProfile,ym:s:referer,ym:s:<attribution>DirectClickOrder,ym:s:<attribution>DirectBannerGroup,ym:s:<attribution>DirectClickBanner,ym:s:<attribution>DirectClickOrderName,ym:s:<attribution>ClickBannerGroupName,ym:s:<attribution>DirectClickBannerName,ym:s:<attribution>DirectPhraseOrCond,ym:s:<attribution>DirectPlatformType,ym:s:<attribution>DirectPlatform,ym:s:<attribution>DirectConditionType,ym:s:<attribution>CurrencyID,ym:s:from,ym:s:<attribution>UTMCampaign,ym:s:<attribution>UTMContent,ym:s:<attribution>UTMMedium,ym:s:<attribution>UTMSource,ym:s:<attribution>UTMTerm,ym:s:<attribution>openstatAd,ym:s:<attribution>openstatCampaign,ym:s:<attribution>openstatService,ym:s:<attribution>openstatSource,ym:s:<attribution>hasGCLID,ym:s:<attribution>GCLID,ym:s:browserLanguage,ym:s:browserCountry,ym:s:clientTimeZone,ym:s:deviceCategory,ym:s:mobilePhone,ym:s:mobilePhoneModel,ym:s:operatingSystemRoot,ym:s:operatingSystem,ym:s:browser,ym:s:browserMajorVersion,ym:s:browserMinorVersion,ym:s:browserEngine,ym:s:browserEngineVersion1,ym:s:browserEngineVersion2,ym:s:browserEngineVersion3,ym:s:browserEngineVersion4,ym:s:cookieEnabled,ym:s:javascriptEnabled,ym:s:screenFormat,ym:s:screenColors,ym:s:screenOrientation,ym:s:screenOrientationName,ym:s:screenWidth,ym:s:screenHeight,ym:s:physicalScreenWidth,ym:s:physicalScreenHeight,ym:s:windowClientWidth,ym:s:windowClientHeight,ym:s:purchaseID,ym:s:purchaseDateTime,ym:s:purchaseAffiliation,ym:s:purchaseRevenue,ym:s:purchaseTax,ym:s:purchaseShipping,ym:s:purchaseCoupon,ym:s:purchaseCurrency,ym:s:purchaseProductQuantity,ym:s:eventsProductID,ym:s:eventsProductList,ym:s:eventsProductBrand,ym:s:eventsProductCategory,ym:s:eventsProductCategory1,ym:s:eventsProductCategory2,ym:s:eventsProductCategory3,ym:s:eventsProductCategory4,ym:s:eventsProductCategory5,ym:s:eventsProductVariant,ym:s:eventsProductPosition,ym:s:eventsProductPrice,ym:s:eventsProductCurrency,ym:s:eventsProductCoupon,ym:s:eventsProductQuantity,ym:s:eventsProductEventTime,ym:s:eventsProductType,ym:s:eventsProductDiscount,ym:s:eventsProductName,ym:s:productsPurchaseID,ym:s:productsID,ym:s:productsName,ym:s:productsBrand,ym:s:productsCategory,ym:s:productsCategory1,ym:s:productsCategory2,ym:s:productsCategory3,ym:s:productsCategory4,ym:s:productsCategory5,ym:s:productsVariant,ym:s:productsPosition,ym:s:productsPrice,ym:s:productsCurrency,ym:s:productsCoupon,ym:s:productsQuantity,ym:s:productsList,ym:s:productsEventTime,ym:s:productsDiscount,ym:s:impressionsURL,ym:s:impressionsDateTime,ym:s:impressionsProductID,ym:s:impressionsProductName,ym:s:impressionsProductBrand,ym:s:impressionsProductCategory,ym:s:impressionsProductCategory1,ym:s:impressionsProductCategory2,ym:s:impressionsProductCategory3,ym:s:impressionsProductCategory4,ym:s:impressionsProductCategory5,ym:s:impressionsProductVariant,ym:s:impressionsProductPrice,ym:s:impressionsProductCurrency,ym:s:impressionsProductCoupon,ym:s:impressionsProductList,ym:s:impressionsProductQuantity,ym:s:impressionsProductEventTime,ym:s:impressionsProductDiscount,ym:s:promotionID,ym:s:promotionName,ym:s:promotionCreative,ym:s:promotionPosition,ym:s:promotionCreativeSlot,ym:s:promotionEventTime,ym:s:promotionType,ym:s:offlineCallTalkDuration,ym:s:offlineCallHoldDuration,ym:s:offlineCallMissed,ym:s:offlineCallTag,ym:s:offlineCallFirstTimeCaller,ym:s:offlineCallURL,ym:s:parsedParamsKey1,ym:s:parsedParamsKey2,ym:s:parsedParamsKey3,ym:s:parsedParamsKey4,ym:s:parsedParamsKey5,ym:s:parsedParamsKey6,ym:s:parsedParamsKey7,ym:s:parsedParamsKey8,ym:s:parsedParamsKey9,ym:s:parsedParamsKey10,ym:s:<attribution>RecommendationSystem,ym:s:<attribution>Messenger",
     "source":"visits", 
-    "attribution": "last"
+    "attribution": "LASTSIGN"
   }
   ```
 
@@ -134,7 +135,7 @@ Extractor execution can be automated using:
   - `login` *(string)*: `ClickHouse` login.  
   - `password` *(string)*: `ClickHouse` password.  
   - `host` *(string)*: `ClickHouse` host address.  
-  - `port` *(integer)*: `ClickHouse` port. Or local port to be bonded with remote `SSH` port. Can be null to automatically choose local port to bond.   
+  - `port` *(integer)*: `ClickHouse` port. Or local port to be bonded with remote `SSH` port. Can be `null` to automatically choose local port to bond.   
   - `db` *(string)*: `ClickHouse` database name.  
   - `table` *(string)*: `ClickHouse` table name.  
   - `logTable` *(string)*: `ClickHouse` table name for log of the script run. 
@@ -157,7 +158,7 @@ Extractor execution can be automated using:
     - `login`: `SSH` username.  
     - `password`: `SSH` password.  
     - `host`: Remote machine hostname or `IP`.  
-    - `port`: Local machine port bound to the remote port.  
+    - `port`: ssh port (usually - 22).  
     - `remote_port_bind`: Remote `ClickHouse` `HTTP` interface port (default **`8123`**). [More details](https://clickhouse.com/docs/en/interfaces/http#http-interface). Currently only HTTP supported. 
 
   ***Example of ssh sub-json:***
@@ -276,7 +277,7 @@ Extractor execution can be automated using:
   Located in the root directory of the project. Import all the necessary modules and executes the script: reads inputs, performs queries, logs the steps, uploads data to `ClickHouse` and makes all the necessary steps. 
 
   ### 2. `routines_utils.py`
-  Located in `utils/` subfolder of the project. Defines 2 custom exceptions: DatabaseException and FlowException and a class UtilSet with set of methods that allow to speed up routine operations like read of files of different formats, writings to files and rewritings of files. 
+  Located in `utils/` subfolder of the project. Defines 2 custom exceptions: `DatabaseException` and `FlowException` and a class `UtilSet` with set of methods that allow to speed up routine operations like read of files of different formats, writings to files and rewritings of files. 
 
   ### 3. `logger.py`
   Located in `utils/` subfolder of the project. Defines `Logger` class that logs data and then writes it both locally and/or to the `ClickHouse` table. 
@@ -294,7 +295,7 @@ Extractor execution can be automated using:
 
 ## :minidisc: Queries description
 
-  There are 6 quries in `queries` subfolder of the project. Most of them - `DML` (precisely - `SELECT`) queries to perform shallow checks of database and tables (both data and log table).
+  There are 6 quries in `queries/` subfolder of the project. Most of them - `DML` (precisely - `SELECT`) queries to perform shallow checks of database and tables (both data and log table).
 
   ### 1. `query_database.sql`
   `SELECT` query to check if database set as `db` parameter of [`ch_credentials.json`](#ch_credentialsjson) exists. 
