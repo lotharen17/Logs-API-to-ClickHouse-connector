@@ -1,6 +1,6 @@
-# :uk: Yandex.Metrika Logs API to ClickHouse Python connector :bar_chart:
+# :uk: Yandex.Metrica Logs API to ClickHouse Python connector :bar_chart:
 
-  This extractor was developed by **ex-Yandex.Metrika employee** as a pet project during emigration's depression. In honour of all of my ex-colleagues. 
+  This extractor was developed by **ex-Yandex.Metrica employee** as a pet project during emigration's depression. In honour of all of my ex-colleagues. 
 
   Concepts used: 
   - OOP; 
@@ -16,7 +16,10 @@
   Ensure you have **Python 3.10+**, **ClickHouse 25+ version** installed, and a database with at least one table created.  
   Then:  
 
-  1. Install all dependencies by running  ```bash pip install -r requirements.txt```. 
+  1. Install all dependencies by running: 
+  ```bash 
+  pip install -r requirements.txt
+  ```
   2. Fill in the configuration files (`.json` files in config/folder). [See config files description](#closed_book-config-files-description).  
   3. Run `main.py`: 
   ```bash
@@ -47,7 +50,7 @@ Extractor execution can be automated using:
 ---
 
 ## :question: Main functions of the script
-1. Extractor downloads data in **TSV format** in folder, determined by `global_config.json` file. It would have used `gzip`, but, unfortunatelly,there is confirmed bug with `gzip` `accept-encoding` header on Metrika's Logs API side. 
+1. Extractor downloads data in **TSV format** in folder, determined by `global_config.json` file. It would have used `gzip`, but, unfortunatelly,there is confirmed bug with `gzip` `accept-encoding` header on Metrica's Logs API side. 
 2. Data then being loaded into a **local ClickHouse instance**.  
    - If `ssh` in `ch_credentials.json` is `null` or `false`, data is stored locally.  
    - If `ssh` is set, an SSH connection is established, and data is transmitted to a remote `ClickHouse` instance.  
@@ -103,7 +106,7 @@ Extractor execution can be automated using:
     ```bash
     pip install -r requirements.txt
     ``` 
-8. Up to 20 gigabytes of free space, as current implementation downloads all the data from the server and only then uploads it to DB.
+8. Up to **20 gigabytes of free disk space**, as current implementation downloads all the data from the server and only then uploads it to DB.
 
 ---
 
