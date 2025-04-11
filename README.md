@@ -240,3 +240,35 @@ Extractor execution can be automated using:
     }
     ```
 
+---
+
+## Modules description
+
+For more details about classes relations see UML diagram.
+
+### 1. `main.py`
+Located in the root directory of the project. Import all the necessary modules and executes the script: reads inputs, performs queries, logs the steps, uploads data to `ClickHouse` and makes all the necessary steps. 
+
+### 2. `routines_utils.py`
+Located in `utils/` subfolder of the project. Defines 2 custom exceptions: DatabaseException and FlowException and a class UtilSet with set of methods that allow to speed up routine operations like read of files of different formats, writings to files and rewritings of files. 
+
+### 3. `logger.py`
+Located in `utils/` subfolder of the project. Defines `Logger` class that logs data and then writes it both locally and/or to the `ClickHouse` table. 
+
+### 4. `database_utils.py`
+Located in `utils/` subfolder of the project. Defines `ClickHouseConnector` class to easily manage connection to the database, SSH tunneling with methods to perform queriing operations, inserts. close connections and so on. 
+
+### 5. `api_methods.py`
+Located in `utils/` subfolder of the project. Defines set of classes-singletones inherited from `AbstractRequest` each of them performs one [LogsAPI request](https://yandex.com/dev/metrika/en/logs/openapi/getLogRequests). 
+
+### 6. `wrappers.py`
+Located in `utils/` subfolder of the project. Defines `MainFlowWrapper` class, that controls execution flow of the script. Honestly speaking, not necessary class :new_moon_with_face: that indicates extreme patternalism of the author :new_moon_with_face: :new_moon_with_face: :new_moon_with_face:. Still, it wraps methods and operations in safe try-except/finally blocks to perform logging and to trow proper exceptions. 
+
+---
+
+## Possible nonsense configs combinations :new_moon_with_face:. 
+
+TBD
+
+
+
