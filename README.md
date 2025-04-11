@@ -24,13 +24,13 @@ Then:
 
 Configuration is determined via multiple JSON files. [See config files description](#config-files-description).  
 
-### Automation  
+## Automation  
 Extractor execution can be automated using:  
 - **Cron Jobs**  
 - **Apache Airflow**  
 - **Any Other Orchestration Tool**  
 
-### What it basically does?
+## What it basically does?
 1. Extractor downloads data in **TSV format** in folder, determined by `global_config.json` file. It would have used `gzip`, but, unfortunatelly,there is confirmed bug with `gzip` `accept-encoding` header on Metrika's Logs API side. 
 2. Data then being loaded into a **local ClickHouse instance**.  
    - If `ssh` in `ch_credentials.json` is `null` or `false`, data is stored locally.  
@@ -79,7 +79,7 @@ Extractor execution can be automated using:
 
   This project relies on several JSON configuration files. All of them stored in `configs/` folder of the project.
 
-#### `api_credentials.json`
+### `api_credentials.json`
   - `token` *(string)*: Your Yandex OAuth token (e.g., `"token": "d2_eerr534"`). [How to get one](https://yandex.com/dev/metrika/en/intro/authorization#get-oauth-token).  
   - `counter` *(string)*: Your Yandex counter ID (e.g., `"counter": "123456"`). 
   - `date1` *(string, nullable)*:  Start date to request data for. Leave it `null` to be yesterday. 
@@ -102,7 +102,7 @@ Extractor execution can be automated using:
   }
   ```
 
-#### `ch_credentials.json`
+### `ch_credentials.json`
   - `login` *(string)*: `ClickHouse` login.  
   - `password` *(string)*: `ClickHouse` password.  
   - `host` *(string)*: `ClickHouse` host address.  
@@ -143,7 +143,7 @@ Extractor execution can be automated using:
   }
   ``` 
 
-#### `global_config.json`
+### `global_config.json`
 
   Contains the following settings:
 
