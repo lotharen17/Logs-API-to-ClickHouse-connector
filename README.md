@@ -1,6 +1,13 @@
 # :uk: Yandex.Metrika Logs API to ClickHouse Python connector :bar_chart:
 
-  This extractor was developed by **ex-Yandex.Metrika employee** as a pet project during emigration's depression. In honours of all of my ex-colleagues. 
+  This extractor was developed by **ex-Yandex.Metrika employee** as a pet project during emigration's depression. In honour of all of my ex-colleagues, my exes and my ex-companies. 
+
+  Concepts used: 
+  - OOP; 
+  - Factory pattern; 
+  - Singletone pattern; 
+  - Clean code with cool docstrings concept; 
+  - Hate-driven development. 
 
 ---
 
@@ -74,6 +81,20 @@ Extractor execution can be automated using:
      ORDER BY (watchID, counterUserIDHash, counterID)
      ```
     *(Omit `counterID` if using only one counter.)*  
+
+   - This script can also write log of execution of the script itself to Log table in ClickHouse. To do that - set name of log table as a value of `logTable` parameter in [`ch_credentials.json`](#ch_credentialsjson). Log table should be created like this: 
+
+    ```sql
+    CREATE OR REPLACE TABLE db_name.log_table_name
+    (	
+        datetime 			DateTime NOT NULL, 
+        response 			INT NOT NULL,
+        endpoint			String NOT NULL, 
+        description			String
+    ) ENGINE = ReplacingMergeTree()
+    PARTITION BY toYYYYMM(datetime)
+    ORDER BY (datetime, response, endpoint);
+    ```
 6. **`Python 3.10+`** and the corresponding `pip3`.  
 7. Dependencies will be downloaded from requirements.txt file with pip: 
     ```bash
@@ -268,6 +289,31 @@ Extractor execution can be automated using:
 
   ### 6. `wrappers.py`
   Located in `utils/` subfolder of the project. Defines `MainFlowWrapper` class, that controls execution flow of the script. Honestly speaking, not necessary class :new_moon_with_face: that indicates extreme patternalism of the author :new_moon_with_face: :new_moon_with_face: :new_moon_with_face:. Still, it wraps methods and operations in safe try-except/finally blocks to perform logging and to trow proper exceptions. 
+
+---
+
+## :minidisc: Queries description
+
+  There are 6 quries in `queries` subfolder of the project. Most of them - `DML` (precisely - `SELECT`) queries to perform shallow checks of database and tables (both data and log table).
+
+  ### 1. `query_database.sql`
+  `SELECT` query to check if database set as `db` parameter of [`ch_credentials.json`](#ch_credentialsjson) exists. 
+
+  ### 2. `query_table.sql` 
+  `SELECT` query to check if table set as `table` parameter of [`ch_credentials.json`](#ch_credentialsjson) exists. 
+
+  ### 3. `query_columns.sql`
+  `SELECT` query to select all the columns of the table from p2. This is key point of shallow check: it will then check amount of columns from database with amount of Logs API parameters in `api_credentials.json` file. Succesfull test pass means these amounts matchs, basically. 
+
+  ### 4. `query_log_table.sql` 
+  `SELECT` query to check if log table set as `logTable` parameter of [`ch_credentials.json`](#ch_credentialsjson) exists. 
+
+  ### 5. `query_log_table_columns.sql`
+  `SELECT` query to check log table columns. 
+
+  ### 6. `create_log_table.sql`
+  DDL query (`CREATE`) to create or replace log table if it doesn't exist or exists but with incorrect columns. Can and definitely will rewrite table with the same name if it exists. 
+
 
 ---
 
