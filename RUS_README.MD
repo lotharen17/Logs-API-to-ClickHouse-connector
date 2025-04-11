@@ -320,7 +320,7 @@
 
 ---
 
-## :rage2: Possible nonsense configs combinations :new_moon_with_face:. 
+## :rage2: Потенциально бесполезные комбинации параметров конфигов и как их избежать :new_moon_with_face:. 
 
   1. Определенно бесполезным является создавать таблицу `ClickHouse` с кастомными названиями и задавать в `global_config.json` параметр `"api_strict_db_table_cols_names"`: `true` т.к. данные могут быть выгружены, но попросту не будут записаны в этом случае в СУБД.  
 
