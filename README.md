@@ -17,7 +17,7 @@
   Then:  
 
   1. Install all dependencies by running  ```bash pip install -r requirements.txt```. 
-  2. Fill in the configuration files (`.json` files in config/folder). [See config files description](#config-files-description).  
+  2. Fill in the configuration files (`.json` files in config/folder). [See config files description](#closed_book-config-files-description).  
   3. Run `main.py`.  
   4. Enjoy your Logs API data in ClickHouse!  
 
@@ -31,7 +31,7 @@
   - [**Sessions/Visits Table**](https://yandex.com/dev/Metrica/en/logs/fields/visits)  
   - [**Events/Hits Table**](https://yandex.com/dev/Metrica/en/logs/fields/hits)  
 
-Configuration is determined via multiple JSON files. [See config files description](#config-files-description).  
+Configuration is determined via multiple JSON files. [See config files description](#closed_book-config-files-description).  
 
 ---
 
