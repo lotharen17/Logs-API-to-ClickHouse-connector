@@ -1,22 +1,24 @@
-# Python data transmission connector: from Yandex.Metrika Logs API to ClickHouse 
+# :uk: :bar_chart: Yandex.Metrika Logs API to ClickHouse Python connector :bar_chart:
+
+  This extractor was developed by **ex-Yandex.Metrika employee** as a pet project during emigration's depression. In honours of all of my ex-colleagues. 
 
 ---
 
-## Quick Start  
+## :running: Quick Start  
 
-Ensure you have **Python 3.10+**, **ClickHouse 25+ version** installed, and a database with at least one table created.  
-Then:  
+  Ensure you have **Python 3.10+**, **ClickHouse 25+ version** installed, and a database with at least one table created.  
+  Then:  
 
-1. Install all dependencies by running  ```bash pip install -r requirements.txt```. 
-2. Fill in the configuration files (`.json` files in config/folder). [See config files description](#config-files-description).  
-3. Run `main.py`.  
-4. Enjoy your Logs API data in ClickHouse!  
+  1. Install all dependencies by running  ```bash pip install -r requirements.txt```. 
+  2. Fill in the configuration files (`.json` files in config/folder). [See config files description](#config-files-description).  
+  3. Run `main.py`.  
+  4. Enjoy your Logs API data in ClickHouse!  
 
 ---
 
-## General Description  
+## :green_book: General Description  
 
-  This extractor was developed by **ex-Yandex.Metrika employee** as a pet project to pull data from the [**Yandex Metrica Logs API**](https://yandex.com/dev/Metrica/en/logs/) and store it in a **local** or **remote** [**ClickHouse**](https://clickhouse.com/) instance via SSH. **Currently supported only HTTP interface and SSH tunneling with login + password authorization, no keychains support yet**. 
+  Script to make request to [**Yandex Metrica Logs API**](https://yandex.com/dev/Metrica/en/logs/) and upload Logs data in a **local** or **remote** [**ClickHouse**](https://clickhouse.com/) instance via SSH. **Currently supported only HTTP interface and SSH tunneling with login + password authorization, no keychains support yet**. 
 
   It works seamlessly with both:  
   - [**Sessions/Visits Table**](https://yandex.com/dev/Metrica/en/logs/fields/visits)  
@@ -24,21 +26,26 @@ Then:
 
 Configuration is determined via multiple JSON files. [See config files description](#config-files-description).  
 
-## Automation  
+---
+
+## :computer: Automation  
 Extractor execution can be automated using:  
 - **Cron Jobs**  
 - **Apache Airflow**  
 - **Any Other Orchestration Tool**  
 
-## What it basically does?
+---
+
+## :question: Main functions of the script
 1. Extractor downloads data in **TSV format** in folder, determined by `global_config.json` file. It would have used `gzip`, but, unfortunatelly,there is confirmed bug with `gzip` `accept-encoding` header on Metrika's Logs API side. 
 2. Data then being loaded into a **local ClickHouse instance**.  
    - If `ssh` in `ch_credentials.json` is `null` or `false`, data is stored locally.  
    - If `ssh` is set, an SSH connection is established, and data is transmitted to a remote `ClickHouse` instance.  
 3. After all, data is either deleted or stored for future purposes, see more in [`global_config.json`](#global_configjson) section. 
+
 ---
 
-## Prerequisites  
+## :japanese_ogre: Prerequisites  
   Before running the extractor, ensure you have:  
 
 1. A [**Yandex Metrica Tag**](https://yandex.com/support/metrica/general/creating-counter.html).  
@@ -75,7 +82,7 @@ Extractor execution can be automated using:
 
 ---
 
-## Config Files Description 
+## :closed_book: Config Files Description 
 
   This project relies on several JSON configuration files. All of them stored in `configs/` folder of the project.
 
@@ -148,18 +155,16 @@ Extractor execution can be automated using:
   Contains the following settings:
 
   - `log_continuous_path`: Path to the script's log file. Stores the history of all script runs.  
-  Default: `"logs/logs.log"`.  
-  The `logs` folder may not exist initially — you can create it manually, or the script will create it automatically.  
+  The set folder may not exist initially — you can create it manually, or the script will create it automatically.  
+  Default: `"logs/logs.log"`. 
 
   - `log_last_run_path`: Path to the script's last run log file. Stores information only about the last run.  
   Default: `"logs/last_run.log"`.
 
   - `temporary_data_path`: Directory to store downloaded CSV files from the Logs API.  
-    Default: `"data/"`.  
-    Each file will be named using the formula:  
-    `datetime-counterId-source(hits/visits)-part{part_number}.tsv`  
+  Each file will be named using the formula: `datetime-counterId-source(hits/visits)-part{part_number}.tsv`  
   Example: `2025-06-10 11:24:25-12345678-visits-part9.tsv`
-
+  Default: `"data/"`. 
   - `delete_temp_data`: Boolean. If `true`, deletes downloaded data after processing. If `false`, keeps it for future use.  
   Default: `true`.
 
@@ -191,7 +196,7 @@ Extractor execution can be automated using:
 
   - `continue_on_log_table_creation_fail`: Boolean. If `true`, continues execution even if the `logTable` is missing or has incorrect columns.  
     In this case, logs won't be saved to the database.  
-  Default: `false`.
+  Default: `true`.
 
   - `clear_api_queue`: Boolean. If `true`, clears the Logs API queue (both prepared and pending requests) to free space for new requests.  
     If `false`, existing requests are preserved, but creating a new request may fail due to lack of space.  
@@ -242,33 +247,41 @@ Extractor execution can be automated using:
 
 ---
 
-## Modules description
+## :notebook: Modules description
 
-For more details about classes relations see UML diagram.
+  For more details about classes relations see UML diagram.
 
-### 1. `main.py`
-Located in the root directory of the project. Import all the necessary modules and executes the script: reads inputs, performs queries, logs the steps, uploads data to `ClickHouse` and makes all the necessary steps. 
+  ### 1. `main.py`
+  Located in the root directory of the project. Import all the necessary modules and executes the script: reads inputs, performs queries, logs the steps, uploads data to `ClickHouse` and makes all the necessary steps. 
 
-### 2. `routines_utils.py`
-Located in `utils/` subfolder of the project. Defines 2 custom exceptions: DatabaseException and FlowException and a class UtilSet with set of methods that allow to speed up routine operations like read of files of different formats, writings to files and rewritings of files. 
+  ### 2. `routines_utils.py`
+  Located in `utils/` subfolder of the project. Defines 2 custom exceptions: DatabaseException and FlowException and a class UtilSet with set of methods that allow to speed up routine operations like read of files of different formats, writings to files and rewritings of files. 
 
-### 3. `logger.py`
-Located in `utils/` subfolder of the project. Defines `Logger` class that logs data and then writes it both locally and/or to the `ClickHouse` table. 
+  ### 3. `logger.py`
+  Located in `utils/` subfolder of the project. Defines `Logger` class that logs data and then writes it both locally and/or to the `ClickHouse` table. 
 
-### 4. `database_utils.py`
-Located in `utils/` subfolder of the project. Defines `ClickHouseConnector` class to easily manage connection to the database, SSH tunneling with methods to perform queriing operations, inserts. close connections and so on. 
+  ### 4. `database_utils.py`
+  Located in `utils/` subfolder of the project. Defines `ClickHouseConnector` class to easily manage connection to the database, SSH tunneling with methods to perform queriing operations, inserts. close connections and so on. 
 
-### 5. `api_methods.py`
-Located in `utils/` subfolder of the project. Defines set of classes-singletones inherited from `AbstractRequest` each of them performs one [LogsAPI request](https://yandex.com/dev/metrika/en/logs/openapi/getLogRequests). 
+  ### 5. `api_methods.py`
+  Located in `utils/` subfolder of the project. Defines set of classes-singletones inherited from `AbstractRequest` each of them performs one [LogsAPI request](https://yandex.com/dev/metrika/en/logs/openapi/getLogRequests). 
 
-### 6. `wrappers.py`
-Located in `utils/` subfolder of the project. Defines `MainFlowWrapper` class, that controls execution flow of the script. Honestly speaking, not necessary class :new_moon_with_face: that indicates extreme patternalism of the author :new_moon_with_face: :new_moon_with_face: :new_moon_with_face:. Still, it wraps methods and operations in safe try-except/finally blocks to perform logging and to trow proper exceptions. 
+  ### 6. `wrappers.py`
+  Located in `utils/` subfolder of the project. Defines `MainFlowWrapper` class, that controls execution flow of the script. Honestly speaking, not necessary class :new_moon_with_face: that indicates extreme patternalism of the author :new_moon_with_face: :new_moon_with_face: :new_moon_with_face:. Still, it wraps methods and operations in safe try-except/finally blocks to perform logging and to trow proper exceptions. 
 
 ---
 
-## Possible nonsense configs combinations :new_moon_with_face:. 
+## :rage2: Possible nonsense configs combinations :new_moon_with_face:. 
 
-TBD
+  1. Definitely,  that's worthless to have custom names of the columns of `ClickHouse` with `global_config.json` parameter `"api_strict_db_table_cols_names"`: `true` as it will cause situation, when data won't be written to databse. 
+
+  2. Also, if you have custom columns names and amount of columns doesn't match with amount of requested fields of Logs API,  with `global_config.json` parameters `"api_strict_db_table_cols_names"`: `false` but with `"run_db_table_test"`: `false` - it will cause db shallow test will be skipped, data will be downloaded, but not written. 
+
+  3. Similar to previous one, but with `global_config.json` parameters `"run_db_table_test"`: `true` and  `"continue_on_columns_test_fail"`: `true`, as it will, again, cause data to be downloaded, but not written to database. 
+
+  List to be continued. 
+      
+     
 
 
 
