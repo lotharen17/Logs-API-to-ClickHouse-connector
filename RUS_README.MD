@@ -17,23 +17,26 @@
 
   Потом:  
 
-  1. Установите зависимости как:  ```bash pip install -r requirements.txt```. 
+  1. Установите зависимости как:  
+  ```bash 
+  pip install -r requirements.txt
+  ```
   2. Заполните конфиги (`.json` файлы в директории `config/folder`). [Описание конфигов](#closed_book-описание-конфиг-файлов).  
   3. Запустите интерпретатором `main.py`: 
   ```bash
     python3 main.py
   ``` 
-  4. Наслаждаться процессом!  
+  4. Наслаждайтесь процессом и тем, как получаете данные!  
 
 ---
 
 ## :green_book: Общее описание
 
-  Скрипт делает запрос к [**Yandex Metrica Logs API**](https://yandex.com/dev/metrika/en/logs/) и записывает данные в **локальный** или **удаленный** [**ClickHouse**](https://clickhouse.com/) инстанс (в последнем случае - по SSH). **В текущей версии поддерживается только авторизация через пару логин+пароль для SSH, keychain и авторизация ключами пока не поддержаны**. 
+  Скрипт делает запрос к [**Yandex Metrica Logs API**](https://yandex.ru/dev/metrika/ru/logs/) и записывает данные в **локальный** или **удаленный** [**ClickHouse**](https://clickhouse.com/) инстанс (в последнем случае - по SSH). **В текущей версии поддерживается только авторизация через пару логин+пароль для SSH, keychain и авторизация ключами пока не поддержаны**. 
 
   Работает одиноково хорошо с обеими видами таблиц:  
-  - [**Визитов**](https://yandex.com/dev/Metrica/en/logs/fields/visits)  
-  - [**Хитов**](https://yandex.com/dev/Metrica/en/logs/fields/hits)  
+  - [**Визитов**](https://yandex.ru/dev/metrika/ru/logs/fields/visits)  
+  - [**Хитов**](https://yandex.ru/dev/metrika/ru/logs/fields/hits)  
 
 Конфигурация осуществляется при помощи аж 3 конфиг файлов. [Описание конфиг-файлов](#closed_book-описание-конфиг-файлов).  
 
@@ -59,9 +62,9 @@
 ## :japanese_ogre: Требования для корректной работы  
   Перед запуском скрипта убедитесь, что:
 
-1. У вас есть [**счетчик Яндекс.Метрики**](https://yandex.com/support/metrica/general/creating-counter.html).  
-2. У вас есть аккаунт Яндекса с, как минимум, **доступом на просмотр** конкретного счетчика Яндекс.Метрики. [Подробнее](https://yandex.com/support/metrica/general/access.html#guest).  
-3. **Yandex OAuth Token** с доступом к Яндекс.Метрике. [Можно сгенерить его по инструкции](https://yandex.com/dev/metrika/en/intro/authorization#get-oauth-token).  
+1. У вас есть [**счетчик Яндекс.Метрики**](https://yandex.ru/support/metrica/general/creating-counter.html).  
+2. У вас есть аккаунт Яндекса с, как минимум, **доступом на просмотр** конкретного счетчика Яндекс.Метрики. [Подробнее](https://yandex.ru/support/metrica/general/access.html#guest).  
+3. **Yandex OAuth Token** с доступом к Яндекс.Метрике. [Можно сгенерить его по инструкции](https://yandex.ru/dev/metrika/ru/intro/authorization).  
 4. **ClickHouse инстанс** установленный:  
 - Локально  
 - Удаленно, но на хосте, доступном по SSH ( авторизация по логин + пароль  - единственно поддерживаемые сейчас). 
@@ -71,7 +74,7 @@
 - На данный момент скрипт работает одновременно только с **одной БД, одной таблицой, и одной сущностью Logs API** (визиты или хиты).
 - Чтобы загружать данные в разные таблицы/бд и из разных источников (для разных счетчиокв, либо сущностей) - склонируйте скрипт и измените конфиги каждого из них, чтоб работали с разными наборами.   
 - Вы можете назвать колонки таблицы своей СУБД в точности как названия параметров Logs API (например: `ym:s:visitID`), либо же дать им кастомные имена (например, `visitID`). В первом случае получите чуть больше гибкости: можете оставить список всех полей для загрузки - и они будут выгружены, но маппинг произойдет только по совпадающим именам колонок и выгруженных параметров. В последнем случае (кастомных имен колонок) - порядок следования колонок `ClickHouse` и порядок следования параметров Logs API должны полностью совпадать, как и их количество. 
-- Рекомендованный движок таблицы: [`ReplacingMergeTree`](https://clickhouse.com/docs/engines/table-engines/mergetree-family/replacingmergetree), т.к. в Logs API ни поле `Sign`, ни `ver` не отдаются. 
+- Рекомендованный движок таблицы: [`ReplacingMergeTree`](https://clickhouse.com/docs/ru/engines/table-engines/mergetree-family/replacingmergetree), т.к. в Logs API ни поле `Sign`, ни `ver` не отдаются. 
 - Рекомендуемый первичный ключ (ключ сортировки), для визитов:   
 
      ```sql
@@ -112,13 +115,13 @@
   Скрипт конфигурируется тремя конфиг-файлами. которые хранятся в папке `configs/`. 
 
 ### `api_credentials.json`
-  - `token` *(string)*: Ваш Yandex OAuth токен (например, `"token": "d2_eerr534"`). [Как получить](https://yandex.com/dev/metrika/en/intro/authorization#get-oauth-token).  
+  - `token` *(string)*: Ваш Yandex OAuth токен (например, `"token": "d2_eerr534"`). [Как получить](https://yandex.ru/dev/metrika/ru/intro/authorization#get-oauth-token).  
   - `counter` *(string)*: Ваш счетчик Метрики (например, `"counter": "123456"`). 
   - `date1` *(string, nullable)*:  Дата начала, за которую запрашиваются данные. Можете оставить`null` чтобы автоподставился вчерашний день. 
   - `date2` *(string, nullable)*: Дата конца для выкачки лога. Должна быть не больше, чем вчерашний день (это последний день, за который можно запросить данные). Оставьте `null` чтобы задать вчерашний день. Вы можете задать конкретный `date1`, а `date2` оставить `null` чтобы выкачать данные с заданного числа по вчера (учитывайте, что данных не должно быть больше 10гб, а также данные старше года нельзя запрашивать). Либо задать оба параметра: `date1` и `date2`как `null`, чтобы запрашивать данные только за вчера. Инкрементальные загрузки +- так и делаются.  
-  - `fields` *(string)*: Список параметров через комму (для [визитов](https://yandex.com/dev/metrika/en/logs/fields/visits) или [хитов](https://yandex.com/dev/metrika/en/logs/fields/hits)).  
+  - `fields` *(string)*: Список параметров через комму (для [визитов](https://yandex.ru/dev/metrika/ru/logs/fields/visits) или [хитов](https://yandex.ru/dev/metrika/ru/logs/fields/hits)).  
   - `source` *(string)*: `"visits"` для визитов, либо `"hits"` для хитов. 
-  - `attribution` *(string)*: по-умолчанию `"LASTSIGN"`, [см. список возможных значений](https://yandex.com/dev/metrika/en/logs/param).
+  - `attribution` *(string)*: по-умолчанию `"LASTSIGN"`, [см. список возможных значений](https://yandex.ru/dev/metrika/ru/logs/param).
 
   ***Пример заполненного `api_credentials.json` файла:***
   
@@ -162,7 +165,7 @@
     - `password`: `SSH` password.  
     - `host`: название хоста или `IP`.  
     - `port`: порт связи по SSH (обычно - 22).  
-    - `remote_port_bind`: удаленный `ClickHouse` порт `HTTP` соединения (по-умолчанидю -  **`8123`**). [Подробнее](https://clickhouse.com/docs/en/interfaces/http#http-interface). На данный момент поддерживается только HTTP-соединение.  
+    - `remote_port_bind`: удаленный `ClickHouse` порт `HTTP` соединения (по-умолчанидю -  **`8123`**). [Подробнее](https://clickhouse.com/docs/ru/interfaces/http#http-interface). На данный момент поддерживается только HTTP-соединение.  
 
   ***Example of ssh sub-json:***
   ```json
@@ -287,7 +290,7 @@
    Находится в папке `utils/` проекта. Содержит класс `ClickHouseConnector` для простой работы и управления соединением с `ClickHouse`, `SSH` туннелем и методами для совершения запросов в СУБД, а также для записи данных в СУБД, закрытия соединений и т.д.  
 
   ### 5. `api_methods.py`
-  Находится в папке `utils/` проекта. Содержит набор классов-синглотонов, наследуемых от абстрактного класса `AbstractRequest`, каждый из которых делает соответсвующий запрос в [LogsAPI](https://yandex.com/dev/metrika/en/logs/openapi/getLogRequests). 
+  Находится в папке `utils/` проекта. Содержит набор классов-синглотонов, наследуемых от абстрактного класса `AbstractRequest`, каждый из которых делает соответсвующий запрос в [LogsAPI](https://yandex.ru/dev/metrika/ru/logs/practice/quick-start). 
 
   ### 6. `wrappers.py`
   
