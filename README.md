@@ -18,7 +18,10 @@
 
   1. Install all dependencies by running  ```bash pip install -r requirements.txt```. 
   2. Fill in the configuration files (`.json` files in config/folder). [See config files description](#closed_book-config-files-description).  
-  3. Run `main.py`.  
+  3. Run `main.py`: 
+  ```bash
+    python3 main.py
+  ``` 
   4. Enjoy your Logs API data in ClickHouse!  
 
 ---
