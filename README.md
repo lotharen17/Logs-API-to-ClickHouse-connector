@@ -31,8 +31,8 @@
   Script to make request to [**Yandex Metrica Logs API**](https://yandex.com/dev/metrika/en/logs/) and upload Logs data in a **local** or **remote** [**ClickHouse**](https://clickhouse.com/) instance via SSH. **Currently supported only HTTP interface and SSH tunneling with login + password authorization, no keychains support yet**. 
 
   It works seamlessly with both:  
-  - [**Sessions/Visits Table**](https://yandex.com/dev/Metrica/en/logs/fields/visits)  
-  - [**Events/Hits Table**](https://yandex.com/dev/Metrica/en/logs/fields/hits)  
+  - [**Sessions/Visits Table**](https://yandex.com/dev/metrika/en/logs/fields/visits)  
+  - [**Events/Hits Table**](https://yandex.com/dev/metrika/en/logs/fields/visits)  
 
 Configuration is determined via multiple JSON files. [See config files description](#closed_book-config-files-description).  
 
