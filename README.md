@@ -1,4 +1,4 @@
-# :uk: :bar_chart: Yandex.Metrika Logs API to ClickHouse Python connector :bar_chart:
+# :uk: Yandex.Metrika Logs API to ClickHouse Python connector :bar_chart:
 
   This extractor was developed by **ex-Yandex.Metrika employee** as a pet project during emigration's depression. In honours of all of my ex-colleagues. 
 
