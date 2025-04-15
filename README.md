@@ -5,9 +5,7 @@
   This extractor was developed by **ex-Yandex.Metrica employee** as a pet project during emigration's depression. In honour of all of my ex-colleagues. 
 
   <figure>
-    <a href="diagrams/diagram.png">
-      <img src="diagrams/diagram.png" alt="Alt text" width="400" height="450">
-    </a>
+    <img src="diagrams/diagram.png" alt="Alt text" width="400" height="450">
     <figcaption>Small UML of the project</figcaption>
   </figure>
 
