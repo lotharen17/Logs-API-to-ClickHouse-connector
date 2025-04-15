@@ -287,7 +287,6 @@ Extractor execution can be automated using:
 
 ## :notebook: Modules description
 
-  For more details about classes relations see [UML diagram]().
   [![UML diagram](diagrams/diagram.png)](diagrams/diagram.png)
 
   ### 1. `main.py`
