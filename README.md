@@ -1,6 +1,6 @@
 # :uk: Yandex.Metrica Logs API to ClickHouse Python connector :bar_chart:
 
-  [Russian version | Русская версия](blob/main/RUS_README.MD)
+  [Russian version | Русская версия](RUS_README.MD)
 
   This extractor was developed by **ex-Yandex.Metrica employee** as a pet project during emigration's depression. In honour of all of my ex-colleagues. 
 
