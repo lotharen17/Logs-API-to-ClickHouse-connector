@@ -1,0 +1,279 @@
+@startuml
+mainframe Yandex.Metrica Logs API to ClickHouse Python connector class structure 📊
+set separator none
+package routines_utils.py{
+exception DatabaseException {}   
+exception FlowException {}
+exception Exception{}
+Exception <|-- DatabaseException
+Exception <|-- FlowException
+class UtilsSet {
+    -__init__()
+    +create_folder()
+    +write_to_file()
+    +nested_writer()
+    +rewrite_file()
+    +nested_writer()
+    +delete_file()
+    +read_file()
+    +read_sql_file()
+    +read_json_file()
+    }
+}
+package logger.py{
+class Logger {
+    -TAB_SEP
+    -EOL_SEP
+    __
+    +log
+    +path
+    #_path
+    #_path_last
+    +utils
+    #_log_line
+    __
+    -__init__()
+    +add_to_log()
+    +write_to_disk_incremental()
+    +write_to_disk_last_run()
+    }
+}
+package api_methods.py {
+    abstract class AbstractRequest {
+        -BASE_URL
+        -SPECIFIC_URL
+        -OAuth
+        -HTTP_METHOD
+        -SUCCESS_CODE
+        -ERROR_MESSAGE_KEY
+        __
+        +counterId
+        +params
+        +method
+        +url
+        +is_success
+        +response_code
+        +response_body
+        +log
+        +raw_response
+        __
+        -__init__()
+        +send_request()
+        +parse_response()
+        +deep_parse_response()
+        +is_success_logic()
+        +log_it()
+    }
+    class LogList {
+        -SPECIFIC_URL
+        -MAX_REQUESTS_QUEUE
+        -SUCCESS_RESPONSE_KEY
+        __
+        +response_body
+        +is_success
+        __
+        +deep_parse_response()
+        +is_success_logic()
+    }
+    class LogEvaluation {
+        -SPECIFIC_URL
+        -SUCCESS_RESPONSE_KEY
+        -SUCCESS_CONDITION_KEY
+        __
+        +response_body
+        +is_success
+        __
+        +deep_parse_response()
+        +is_success_logic()
+    }
+    class CreateLog {
+        -HTTP_METHOD
+        -SPECIFIC_URL
+        -SUCCESS_RESPONSE_KEY
+        -SUCCESS_CONDITION_KEY
+        __
+        +request_id
+        +response_body
+        +is_success
+        __
+        -__init__()
+        +deep_parse_response()
+        +is_success_logic() 
+    }
+    class CleanProcessedLog {
+        -HTTP_METHOD
+        -SPECIFIC_URL
+        -SUCCESS_RESPONSE_KEY
+        -SUCCESS_CONDITION_KEY
+        -SUCCESS_STATUS_KEY
+        __
+        +url
+        +request_id
+        +cleared_request_id
+        +status
+        +response_body
+        +is_success
+        __
+        -__init__()
+        +deep_parse_response()
+        +is_success_logic()
+    }
+    class CleanPendingLog {
+        -SPECIFIC_URL
+    }
+    class StatusLog {
+        -SPECIFIC_URL
+        -HTTP_METHOD
+        -SUCCESS_PARTS_KEY
+        -SUCCESS_STATUS_TO_DOWDNLOAD
+        -PART_INDEX_KEY
+        __
+        +parts
+        +parts_amount
+        +is_success
+        <color:red>del cleared_request_id</color>
+        __
+        -__init__()
+        +deep_parse_response()
+        +delis_success_logic()
+        +log_it()
+    }
+    class DownloadLogPart {
+        -SPECIFIC_URL
+        -VARIABLE_PART_URL
+        __
+        +url_const
+        +url
+        +is_success
+        __
+        -__init__()
+        +send_request()
+        +log_it()
+        +is_success_logic()
+    }
+    AbstractRequest <|-- LogList
+    AbstractRequest <|-- LogEvaluation
+    AbstractRequest <|-- CreateLog
+    AbstractRequest <|-- CleanProcessedLog
+    CleanProcessedLog <|-- CleanPendingLog
+    CleanProcessedLog <|-- StatusLog
+    AbstractRequest <|-- DownloadLogPart
+}
+package database_utils.py{
+class ClickHouseConnector {
+    -FORMAT
+    -BadCode
+    -SuccessCode
+    -CloseCode
+    -ChEndpoint
+    -SSHEndpoint
+    -ChQueryEndpoint
+    -ChCreateEndpoint
+    -SSHBadDescription
+    -SSHSuccessDescription
+    -SSHCloseDescription
+    -ChBadDescription
+    -ChSuccessDescription
+    -ChCloseDescription
+    -ChQueryBadDescription
+    -ChQuerySuccessDescription
+    -ChCreateTableBadDescription
+    -ChCreateTableSuccessDescription
+    -ChInsertBadDescription
+    -ChInsertSuccessDescription    
+    __
+    +logger
+    +login
+    +password
+    +host
+    +port
+    +db
+    +table
+    +logTable
+    +ssh
+    +queries
+    +creations
+    +tunnel
+    +ch_client
+    __
+    -__init__()
+    #_establish_ssh_tunnel()
+    +tunneling_with_ports_autoassignation()
+    #_establish_ch_connection()
+    +re_establish_connection()
+    +close_connections()
+    +query_data()
+    +create_table()
+    +insert_datafile()
+    +insert_data()
+    }
+}
+package wrappers.py{
+class MainFlowWrapper {
+    -DEFAULT_SUCCESS_CODE
+    -DEFAULT_ERROR_CODE
+    -DOWNLOAD_API_OPERATION_DEFAULT_ENDPOINT
+    -LOAD_TO_DB_OPERATION_DEFAULT_ENDPOINT
+    -FINISH_OPERATION_DEFAULT_ENDPOINT
+    -LOG_TABLE_FIELDS
+    -DEFAULT_REQUEST_SLEEP
+    -DEFAULT_API_QUERY_RETRIES
+    -BAD_STATUS_CODES
+    __
+    +ch_credentials
+    +api_settings
+    +global_settings
+    +utilset
+    +logger
+    +data_path
+    +frequency
+    +status_timeout
+    +queries
+    +counterId
+    +token
+    +params
+    +is_log_table
+    +ch
+    +log_evaluation
+    +log_request
+    +request_id
+    +deletion
+    +status_request
+    +parts
+    +parts_amount
+    +download_log_part
+    __
+    -__init__()
+    +dates_parameters_normalization()
+    +establish_db_connections()
+    +check_db_tables()
+    +check_log_evaluation()
+    +create_log_request()
+    +delete_log()
+    +log_status_check()
+    +log_downloader()
+    +write_data_to_db()
+    +delete_files()
+    +write_log_to_db()
+    +final_log_record()
+    +close_and_finish()
+    }
+}
+Logger "1" *-- "1"	UtilsSet : contains
+AbstractRequest "1" o-- "1" Logger 
+ClickHouseConnector "1" o-- "1" Logger
+MainFlowWrapper "1" o-- "1" UtilsSet
+MainFlowWrapper "1" o-- "many" DatabaseException
+MainFlowWrapper "1" o-- "many" FlowException
+MainFlowWrapper "1" *-- "1" Logger : contains
+MainFlowWrapper "1" *-- "1" ClickHouseConnector : contains
+MainFlowWrapper "1" *-- "1" LogEvaluation : contains
+MainFlowWrapper "1" *-- "1" LogList : contains
+MainFlowWrapper "1" *-- "many" CleanPendingLog : contains
+MainFlowWrapper "1" *-- "many" CleanProcessedLog : contains
+MainFlowWrapper "1" *-- "1" CreateLog : contains
+MainFlowWrapper "1" *-- "many" StatusLog : contains
+MainFlowWrapper "1" *-- "1" DownloadLogPart : contains
+
+
+@enduml

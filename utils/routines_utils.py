@@ -18,6 +18,10 @@ class UtilsSet:
         create_folder(self,dirpath:str) - creates folder in set dirpath if doesn't exist.
         write_to_file(self,content:str,path:str) - writes (appends data) content to file. 
         rewrite_file(self,content:str,path:str) - rewrites file entirely. 
+        delete_file(self,path:str) - deleteres file if it exists (safely). 
+        read_file(self,path:str)->:blob,:str,:bin - reads file of any type. 
+        read_sql_file(self,path:str)->:str - reads and properly formats sql file to use in queries.
+        read_json_file(self,path:str)->:dict - reads, parses JSON file and then converts it into Python dict. 
     """
 
     def __init__(self): 
