@@ -7,7 +7,7 @@
   Small but clickable UML:
   <div>
   <a href="diagrams/diagram.png" >
-    <img src="diagrams/diagram.png" alt="UML diagram" width="800" height="850">
+    <img src="diagrams/diagram.png" alt="UML diagram" width="800" height="600">
   </a>
   </div>
 
