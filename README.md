@@ -4,10 +4,12 @@
 
   This extractor was developed by **ex-Yandex.Metrica employee** as a pet project during emigration's depression. In honour of all of my ex-colleagues. 
 
-  Small but clickable UML: 
+  Small but clickable UML:
+  <div>
   <a href="diagrams/diagram.png" >
-    <img src="diagrams/diagram.png" alt="UML diagram" width="400" height="450">
+    <img src="diagrams/diagram.png" alt="UML diagram" width="800" height="850">
   </a>
+  </div>
 
   Concepts used: 
   - OOP; 
