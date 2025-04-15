@@ -6,7 +6,7 @@
 
   <figure>
     <a href="diagrams/diagram.png">
-      <img src="diagrams/diagram.png" alt="Alt text" width="150" height="200">
+      <img src="diagrams/diagram.png" alt="Alt text" width="400" height="450">
     </a>
     <figcaption>Small UML of the project</figcaption>
   </figure>
