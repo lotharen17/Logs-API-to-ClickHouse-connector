@@ -1,13 +1,15 @@
 # :uk: Yandex.Metrica Logs API to ClickHouse Python connector :bar_chart:
 
-  [Russian version|Русская версия](README.md)
+  [Russian version | Русская версия](RUS_README.md)
 
   This extractor was developed by **ex-Yandex.Metrica employee** as a pet project during emigration's depression. In honour of all of my ex-colleagues. 
 
-  <figure>
+  <!-- <figure>
     <img src="diagrams/diagram.png" alt="Alt text" width="400" height="450">
     <figcaption>Small UML of the project</figcaption>
-  </figure>
+  </figure> -->
+  UML of the project classes: 
+  [![UML diagram](diagrams/diagram.png)](diagrams/diagram.png)
 
   Concepts used: 
   - OOP; 
