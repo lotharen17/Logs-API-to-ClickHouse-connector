@@ -1,15 +1,13 @@
 # :uk: Yandex.Metrica Logs API to ClickHouse Python connector :bar_chart:
 
-  [Russian version | Русская версия](RUS_README.md)
+  [Russian version | Русская версия](blob/main/RUS_README.MD)
 
   This extractor was developed by **ex-Yandex.Metrica employee** as a pet project during emigration's depression. In honour of all of my ex-colleagues. 
 
-  <!-- <figure>
-    <img src="diagrams/diagram.png" alt="Alt text" width="400" height="450">
-    <figcaption>Small UML of the project</figcaption>
-  </figure> -->
-  UML of the project classes: 
-  [![UML diagram](diagrams/diagram.png)](diagrams/diagram.png)
+  Small but clickable UML: 
+  <a href="diagrams/diagram.png" >
+    <img src="diagrams/diagram.png" alt="UML diagram" width="400" height="450">
+  </a>
 
   Concepts used: 
   - OOP; 
@@ -287,6 +285,7 @@ Extractor execution can be automated using:
 ## :notebook: Modules description
 
   For more details about classes relations see [UML diagram]().
+  [![UML diagram](diagrams/diagram.png)](diagrams/diagram.png)
 
   ### 1. `main.py`
   Located in the root directory of the project. Import all the necessary modules and executes the script: reads inputs, performs queries, logs the steps, uploads data to `ClickHouse` and makes all the necessary steps. 
